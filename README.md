@@ -12,7 +12,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Key Features
+## Key Features
 
 * **LLM-based Fake Documents**
   Use GPT-4 (or equivalent LLM) to generate highly realistic, contextual decoy documents tailored to target environments.
@@ -47,7 +47,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Why This Project Is Novel
+## Project Novelty
 
 * **LLM-driven Realism** — Most honeytokens are hand-crafted or templated; using modern LLMs allows generation of context-aware, believable decoy content that adapts to target environments.
 
@@ -59,7 +59,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# High-level Architecture
+## Project Architecture
 
 1. **Document Generator**
 
@@ -87,7 +87,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Requirements (high level)
+## Requirements
 
 * Python 3.9+ (Flask / Streamlit / ML libs)
 * Access to an LLM (GPT-4 or equivalent) — use API keys and follow provider terms.
@@ -100,7 +100,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Usage (conceptual)
+## Usage (conceptual)
 
 1. **Generate honeytokens** with the LLM generator, specifying document type, tone, and target context.
 2. **Embed unique UUID** and covert triggers into each file via the embedder pipeline.
@@ -112,7 +112,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Implementation Roadmap (≈ 20 Weeks)
+## Implementation Roadmap (≈ 20 Weeks)
 
 | Phase                                    | Timeline (Weeks) | Deliverables                                                                                                                                             |
 | ---------------------------------------- | ---------------: | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -128,7 +128,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Testing & Evaluation
+## Testing & Evaluation
 
 * Run all tests in an isolated lab / VM environment.
 * Use synthetic access events and authorized red-team scenarios only.
@@ -138,7 +138,7 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-# Ethics, Legal & Safety
+## Ethics, Legal & Safety
 
 This project has strong dual-use potential. Please adhere to the following:
 
@@ -152,7 +152,7 @@ If you are unsure whether a deployment is permitted, **do not proceed** without 
 
 ---
 
-# Extensibility & Add-ons
+## Extensibility & Add-ons
 
 * Add ML pipelines (Isolation Forest, Random Forest) for anomaly detection and classification.
 * Add embedding services for document similarity checks (Sentence-BERT or provider embeddings).
@@ -161,7 +161,7 @@ If you are unsure whether a deployment is permitted, **do not proceed** without 
 
 ---
 
-# Directory / Component Suggestions
+## Directory / Component Suggestions
 
 (Implementation maintainers can adopt this structure)
 
@@ -181,28 +181,3 @@ LICENSE
 
 ---
 
-# Contribution
-
-Contributions are welcome from security researchers and engineers following this repo’s ethics and safety guidelines. Please:
-
-1. Open issues describing proposed changes.
-2. Provide tests and a documented rationale for new features.
-3. Never add code that intentionally collects PII or creates malware.
-
----
-
-# Contact & Support
-
-For questions about safe deployment strategies, architecture, or contribution policies, open an issue in this repo or contact the maintainers (internal contact channels in a private deployment).
-
----
-
-# License
-
-Choose a license appropriate for your organization (e.g., MIT, Apache 2.0) and specify it here. If distributing publicly, consider adding an explicit acceptable-use clause that prohibits malicious deployment.
-
----
-
-## Final Notes
-
-This README outlines the design, features, and an ethical roadmap for an LLM-based honeytoken system. The document intentionally avoids implementation-level details that would enable malicious use (e.g., weaponized macro code or instructions to exfiltrate protected data). If you want a safe, lab-friendly starter template for the generator, dashboard skeleton, or ML evaluation harness — I can produce those high-level, non-abusive code skeletons next.
