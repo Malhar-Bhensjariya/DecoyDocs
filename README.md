@@ -112,19 +112,19 @@ This repository contains specification, architecture, and an implementation road
 
 ---
 
-## Implementation Roadmap (≈ 20 Weeks)
+## Implementation Roadmap
 
-| Phase                                    | Timeline (Weeks) | Deliverables                                                                                                                                             |
-| ---------------------------------------- | ---------------: | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 1 — Research & Setup               |         Week 1–2 | Study honeytokens, document macro safety, and steganography techniques; create lab environment and threat model.                                         |
-| Phase 2 — LLM Document Generation        |         Week 3–4 | Prototype scripts to generate fake HR/finance documents using an LLM; template library and content controls.                                             |
-| Phase 3 — Steganography & Macro Triggers |         Week 5–7 | Implement safe embedder that inserts non-sensitive beacon references and stego markers; macro scaffolding prepared (ethically constrained, non-harmful). |
-| Phase 4 — Honeypot Server                |         Week 8–9 | Flask-based collector to receive beacon pings and store events; secure TLS and logging.                                                                  |
-| Phase 5 — Fingerprinting & Logging       |       Week 10–11 | Extraction/normalization of available metadata (Office/app version, OS hints); UUID mapping to files.                                                    |
-| Phase 6 — Dashboard Development          |       Week 12–14 | Web UI with real-time event stream, charts, and per-file drilldowns (Streamlit/Grafana).                                                                 |
-| Phase 7 — Geo-IP Mapping & Alerts        |       Week 15–16 | Integrate GeoIP resolution; implement webhooks/email alerting and alert management.                                                                      |
-| Phase 8 — Testing & Red Team Simulation  |       Week 17–18 | Simulated attacker scenarios (authorized), measure detection, false positives, and stealth.                                                              |
-| Phase 9 — Reporting & Packaging          |       Week 19–20 | Final report, usage guide, deployment checklist, sanitized demo artifacts and screenshots.                                                               |
+| Phase                                    | Deliverables                                                                                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 — Research & Setup               | Study honeytokens, document macro safety, and steganography techniques; create lab environment and threat model.                                         |
+| Phase 2 — LLM Document Generation        | Prototype scripts to generate fake HR/finance documents using an LLM; template library and content controls.                                             |
+| Phase 3 — Steganography & Macro Triggers | Implement safe embedder that inserts non-sensitive beacon references and stego markers; macro scaffolding prepared (ethically constrained, non-harmful). |
+| Phase 4 — Honeypot Server                | Flask-based collector to receive beacon pings and store events; secure TLS and logging.                                                                  |
+| Phase 5 — Fingerprinting & Logging       | Extraction/normalization of available metadata (Office/app version, OS hints); UUID mapping to files.                                                    |
+| Phase 6 — Dashboard Development          | Web UI with real-time event stream, charts, and per-file drilldowns (Streamlit/Grafana).                                                                 |
+| Phase 7 — Geo-IP Mapping & Alerts        | Integrate GeoIP resolution; implement webhooks/email alerting and alert management.                                                                      |
+| Phase 8 — Testing & Red Team Simulation  | Simulated attacker scenarios (authorized), measure detection, false positives, and stealth.                                                              |
+| Phase 9 — Reporting & Packaging          | Final report, usage guide, deployment checklist, sanitized demo artifacts and screenshots.                                                               |
 
 ---
 
