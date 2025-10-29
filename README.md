@@ -168,13 +168,15 @@ If you are unsure whether a deployment is permitted, **do not proceed** without 
 ```
 /docs
 /src
-  /generator        # LLM generation scripts (templates, prompt library)
-  /embedder         # Non-destructive embedder that adds UUIDs and beacon references
-  /collector        # Flask server to receive beacons/log events
-  /dashboard        # Streamlit/Grafana configs and UI code
-  /ml               # Models for anomaly detection and classification
+  /generator        # LLM-based fake document generator
+  /embedder         # Steganography & macro trigger embedding
+  /collector        # Flask honeypot server for beacon data
+  /dashboard        # Streamlit/Grafana real-time monitoring UI
+  /ml               # ML models for anomaly detection & classification
+  /common           # Shared utils (UUID, config, logging, I/O helpers)
+  /infra            # VM setup, deployment, and environment scripts
 /tests
-/config
+/config             # Central config files (YAML/JSON for each module)
 README.md
 LICENSE
 ```
