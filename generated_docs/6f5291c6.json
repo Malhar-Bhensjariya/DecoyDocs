@@ -1,0 +1,8 @@
+{
+  "uuid": "6f5291c6",
+  "generated_at": "2025-10-31T09:26:21.339677+00:00",
+  "model": "gemini-2.5-pro",
+  "prompt_summary": "Corporate Strategy and Growth Report - Q1 2026",
+  "template_used": "generic_report",
+  "source_script": "generate_docs.py"
+}

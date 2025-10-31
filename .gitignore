@@ -1,0 +1,8 @@
+venv/
+.env
+.venv/
+llm-docgen/venv/
+llm-docgen/.env
+*/venv/
+*/.venv/
+*/.env
