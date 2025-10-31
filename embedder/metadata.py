@@ -17,7 +17,7 @@ def write_docx_custom_property(src_docx: str, dest_docx: str, prop_name: str, pr
     if os.path.abspath(src_docx) != os.path.abspath(dest_docx):
         shutil.copy2(src_docx, dest_docx)
     else:
-        print(f"[⚠️] Skipping copy: {src_docx} and {dest_docx} are the same file")
+        print(f"Skipping copy: {src_docx} and {dest_docx} are the same file")
 
     with zipfile.ZipFile(dest_docx, 'a') as z:
         try:

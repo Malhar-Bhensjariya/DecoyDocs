@@ -347,7 +347,8 @@ def main(argv: List[str]):
         }
         prompt = build_prompt(args.template, title, args.context)
 
-        print(f"[{i+1}/{args.count}] Generating '{title}' (uuid={uid}) ...")
+        #print(f"[{i+1}/{args.count}] Generating '{title}' (uuid={uid}) ...")
+        print(f"Generating '{title}' (uuid={uid}) ...")
         try:
             text = generate_text(client, prompt, model=args.model, max_output_tokens=args.max_tokens)
             text = generate_text(client, prompt, model=args.model, max_output_tokens=args.max_tokens)
