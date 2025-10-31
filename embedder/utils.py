@@ -8,8 +8,7 @@ def gen_uuid() -> str:
     return str(uuid.uuid4())
 
 def safe_filename(name: str) -> str:
-    # sanitize a filename
-    safe = "".join(c for c in name if c.isalnum() or c in (' ','.','_','-')).rstrip()
+    safe = "".join(c for c in name if c.isalnum() or c in (' ', '.', '_', '-')).rstrip()
     return safe[:255]
 
 def file_checksum(path: str, algo: str = "sha256") -> str:

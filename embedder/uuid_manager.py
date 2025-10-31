@@ -1,7 +1,7 @@
 # uuid_manager.py
-from typing import Dict
 import sqlite3
 from datetime import datetime
+from typing import Dict
 from .utils import ensure_dir
 
 DB_PATH = "embedder_uuid.db"
@@ -45,5 +45,5 @@ def lookup(u: str, db_path: str = DB_PATH) -> Dict:
     conn.close()
     if not row:
         return {}
-    keys = ["uuid","label","template","created_at","status","manifest_path"]
+    keys = ["uuid", "label", "template", "created_at", "status", "manifest_path"]
     return dict(zip(keys, row))

@@ -1,6 +1,5 @@
 # packer.py
-# Build final PDF via HTML -> wkhtmltopdf (recommended for remote-image fetch behavior),
-# and embed stego image (file://) plus remote image (https://...)
+# Build final PDF via HTML -> wkhtmltopdf
 import os
 import subprocess
 from typing import Tuple
@@ -13,23 +12,25 @@ def build_pdf_with_assets(title: str, stego_path: str, beacon_url: str, out_name
     ensure_dir(OUTPUT_DIR)
     out_name = safe_filename(out_name or f"{title}.pdf")
     out_path = os.path.join(OUTPUT_DIR, out_name)
+
     html = f"""
     <html>
       <body>
         <h1>{title}</h1>
-        <p>Document UUID embedded in assets.</p>
+        <p>Document UUID embedded in image.</p>
         <img src="{beacon_url}" alt="remote-beacon" />
         <p>Embedded image:</p>
         <img src="file://{os.path.abspath(stego_path)}" alt="stego" />
       </body>
     </html>
     """
-    tmp = os.path.join(OUTPUT_DIR, "tmp_embed.html")
-    with open(tmp, "w", encoding="utf-8") as f:
+    tmp_html = os.path.join(OUTPUT_DIR, "tmp_embed.html")
+    with open(tmp_html, "w", encoding="utf-8") as f:
         f.write(html)
-    # requires wkhtmltopdf installed in VM
-    subprocess.run(["wkhtmltopdf", tmp, out_path], check=True)
-    os.remove(tmp)
+
+    subprocess.run(["wkhtmltopdf", tmp_html, out_path], check=True)
+    os.remove(tmp_html)
+
     checksum = file_checksum(out_path)
     manifest = {
         "path": out_path,
