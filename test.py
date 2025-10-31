@@ -15,11 +15,11 @@ def init_db():
                  (uuid TEXT, beacon_url TEXT, status TEXT, time TEXT)''')
     conn.commit()
     conn.close()
-    print("[1] Database initialized or verified.")
+    print("[1/4] Database initialized or verified.")
 
 def extract_docx_metadata(doc_path):
     """Read embedded properties from a DOCX file."""
-    print(f"[2] Reading metadata from DOCX: {doc_path}")
+    print(f"[2/4] Reading metadata from DOCX: {doc_path}")
     honey_uuid = read_docx_custom_property(doc_path, "HoneyUUID")
     beacon_url = read_docx_custom_property(doc_path, "BeaconURL")
 
@@ -37,7 +37,7 @@ def extract_docx_metadata(doc_path):
 
 def trigger_beacon(url):
     """Attempt to simulate beacon trigger by requesting the embedded URL."""
-    print(f"[3] Simulating beacon trigger...\n    Target: {url}")
+    print(f"[3/4] Simulating beacon trigger...\n    Target: {url}")
     try:
         r = requests.get(url, timeout=5)
         status = f"{r.status_code} {r.reason}"
@@ -49,7 +49,7 @@ def trigger_beacon(url):
 
 def log_result(uuid, beacon_url, status):
     """Record test results in local honeypot DB."""
-    print(f"[4] Logging result to database...")
+    print(f"[4/4] Logging result to database...")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     now = datetime.now(timezone.utc).isoformat()
