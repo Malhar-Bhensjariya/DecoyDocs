@@ -6,3 +6,5 @@ llm-docgen/.env
 */venv/
 */.venv/
 */.env
+.dist
+venv
