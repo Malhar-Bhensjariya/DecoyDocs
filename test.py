@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """
-test.py (batch)
-Scan out/ for all *_embedded.docx, read HoneyUUID + BeaconURL, optionally perform HTTP GET,
-log results into honeypot.db, and print a short inference instead of raw error text for demos.
-
-Usage:
-    python test.py            # runs HTTP checks
-    python test.py --no-http  # only read metadata and log SKIPPED_HTTP
+test.py — refined clean output mode
+Scans for *_embedded.docx in /out, reads HoneyUUID & BeaconURL, tests beacon reachability,
+and prints concise inferences (no raw error noise).
 """
 
 import sqlite3
@@ -16,8 +12,6 @@ import requests
 from pathlib import Path
 import sys
 import argparse
-import socket
-import urllib3
 
 DB_PATH = "honeypot.db"
 OUT_DIR = Path("out")
@@ -39,7 +33,6 @@ def ensure_table_schema():
     c.execute("PRAGMA table_info(test_logs);")
     cols = [row[1] for row in c.fetchall()]
     if cols != EXPECTED_COLUMNS:
-        print("Existing test_logs schema mismatch. Recreating table with the expected schema.")
         c.execute("DROP TABLE IF EXISTS test_logs;")
         c.execute(
             "CREATE TABLE test_logs (uuid TEXT, beacon_url TEXT, status TEXT, time TEXT, filename TEXT)"
@@ -61,47 +54,35 @@ def extract_docx_metadata(doc_path: Path):
 
 
 def derive_inference_from_error(raw_status: str) -> str:
-    # Accepts raw status strings (e.g., "Error: <...>", "200 OK") and returns a short inference.
     s = (raw_status or "").lower()
-    if "name or service not known" in s or "failed to resolve" in s or "nodename nor servname" in s:
+    if "failed to resolve" in s or "name or service not known" in s:
         return "Domain unresolved — beacon host is placeholder or DNS blocked."
-    if "connection refused" in s or "connectionreseterror" in s:
-        return "Connection refused — listener not running or port blocked by firewall."
-    if "timed out" in s or "timeout" in s or "max retries exceeded" in s:
-        return "Timeout — network blocked, no route, or listener too slow to respond."
-    if "ssl" in s or "certificate" in s or "tls" in s:
-        return "TLS/SSL problem — certificate issue or interception by proxy."
-    # HTTP status codes
+    if "connection refused" in s:
+        return "Connection refused — listener not active or firewall blocked."
+    if "timed out" in s or "timeout" in s:
+        return "Timeout — network unreachable or host not responding."
+    if "ssl" in s or "certificate" in s:
+        return "TLS/SSL issue — certificate mismatch or proxy interception."
     if s.startswith("200") or "200 ok" in s:
-        return "Success — external resource fetched (beacon reached)."
+        return "Success — external beacon successfully fetched."
     if s.startswith("204") or "204 " in s:
-        return "Success (no content) — beacon endpoint acknowledged the request."
+        return "Success (no content) — silent beacon acknowledgment."
     if s.startswith("3"):
-        return "Redirect — request was redirected (CDN or proxy)."
+        return "Redirect — request rerouted via CDN or proxy."
     if s.startswith("4"):
-        return "Client error — resource reachable but access denied or invalid request."
+        return "Client error — endpoint reachable but denied or malformed."
     if s.startswith("5"):
-        return "Server error — beacon reachable but server failed to handle request."
-    return "Unknown network outcome — check raw status or logs."
+        return "Server error — remote beacon server failed."
+    return "Unknown network outcome — check detailed logs."
 
 
 def trigger_beacon(url, timeout=6):
     try:
-        # run a real request and return HTTP status text
         r = requests.get(url, timeout=timeout)
-        raw = f"{r.status_code} {r.reason}"
-        return raw
-    except requests.exceptions.SSLError as e:
-        return f"Error: SSL error: {e}"
-    except requests.exceptions.ConnectTimeout as e:
-        return f"Error: Timeout: {e}"
-    except requests.exceptions.ReadTimeout as e:
-        return f"Error: Read timeout: {e}"
-    except requests.exceptions.ConnectionError as e:
-        # ConnectionError wraps several lower-level socket errors; include message
-        return f"Error: Connection error: {e}"
+        return f"{r.status_code} {r.reason}"
     except Exception as e:
-        return f"Error: {e}"
+        # Return short tag instead of raw traceback
+        return f"Error: {type(e).__name__}"
 
 
 def log_result(uuid, beacon_url, status, filename):
@@ -131,24 +112,18 @@ def main(no_http: bool):
         print(f"[{i}/{len(docs)}] File: {doc.name}")
         uuid, beacon = extract_docx_metadata(doc)
         print(f"    HoneyUUID: {uuid or 'MISSING'}")
-        print(f"    BeaconURL: {beacon or 'MISSING'}")
 
         if not beacon:
-            status = "NO_BEACON"
             inference = "No beacon URL present in document."
-            print(f"    {inference}")
+            status = "NO_BEACON"
         elif no_http:
+            inference = "HTTP test skipped (flag)."
             status = "SKIPPED_HTTP"
-            inference = "HTTP test skipped by flag."
-            print(f"    {inference}")
         else:
-            print("    Triggering beacon (HTTP GET)...")
-            raw_status = trigger_beacon(beacon)
-            inference = derive_inference_from_error(raw_status)
-            print(f"    Result: {raw_status}")
-            print(f"    Inference: {inference}")
-            status = raw_status
+            status = trigger_beacon(beacon)
+            inference = derive_inference_from_error(status)
 
+        print(f"    Inference: {inference}")
         log_result(uuid, beacon, status, doc.name)
         print("    Logged.\n")
 
@@ -157,6 +132,6 @@ def main(no_http: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Batch test embedded honeydocs")
-    parser.add_argument("--no-http", action="store_true", help="Do not perform HTTP GET on beacon URLs")
+    parser.add_argument("--no-http", action="store_true", help="Skip actual HTTP requests")
     args = parser.parse_args()
     main(no_http=args.no_http)
