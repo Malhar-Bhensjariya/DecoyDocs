@@ -23,81 +23,93 @@ BEACON_DOMAIN = "cdn-docs-local.test"
 
 def generate_docs():
     """Step 1: Call the LLM document generator."""
-    print("🧠 Generating new documents using generate_docs.py ...")
+    print("\n[1/7] Generating new documents using llm-docgen/generate_docs.py ...")
     subprocess.run(
         ["python3", "llm-docgen/generate_docs.py", "--count", "1", "--template", "generic_report"],
         check=True,
     )
-    print("✅ Document generation complete.\n")
+    print("   -> Document generation complete.\n")
 
 
 def get_latest_docx() -> Path:
     """Fetch the most recently created docx from generated_docs."""
     docs = list(GENERATED_DIR.glob("*.docx"))
     if not docs:
-        raise FileNotFoundError("No DOCX found in generated_docs/")
-    return max(docs, key=lambda p: p.stat().st_mtime)
+        raise FileNotFoundError("No DOCX found in generated_docs/.")
+    latest = max(docs, key=lambda p: p.stat().st_mtime)
+    print(f"[2/7] Latest generated DOCX found: {latest.name}")
+    return latest
 
 
 def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str) -> Path:
     """Embed UUID and beacon URL into DOCX metadata."""
     ensure_dir(OUT_DIR)
     out_path = OUT_DIR / f"{docx_path.stem}_embedded.docx"
+    print(f"[5/7] Embedding metadata into DOCX:\n    Source: {docx_path}\n    Destination: {out_path}")
     write_docx_custom_property(str(docx_path), str(out_path), "HoneyUUID", uuid)
     write_docx_custom_property(str(out_path), str(out_path), "BeaconURL", beacon_url)
-    print(f"📄 Embedded metadata into: {out_path}")
+    print("   -> Metadata embedded successfully.")
     return out_path
 
 
 def main():
+    print("=== DECOYDOCS PIPELINE START ===")
     ensure_dir(GENERATED_DIR)
     ensure_dir(OUT_DIR)
     init_db()
 
-    # 1️⃣ Generate new doc(s)
+    # Step 1: Generate new doc(s)
     generate_docs()
 
-    # 2️⃣ Get latest generated doc
+    # Step 2: Get latest generated doc
     latest_doc = get_latest_docx()
-    print(f"🗂️ Latest generated doc: {latest_doc.name}")
 
-    # 3️⃣ Generate UUID + reserve entry
+    # Step 3: Generate UUID + reserve entry
+    print("\n[3/7] Generating and reserving UUID ...")
     u = gen_uuid()
     reserve_uuid(u, label="auto_generated", template="llm_doc")
+    print(f"   -> Reserved UUID: {u}")
 
-    # 4️⃣ Build beacon URL
+    # Step 4: Build beacon URL
+    print("\n[4/7] Building beacon URL ...")
     beacon_url = build_beacon_url(u, domain=BEACON_DOMAIN)
-    print(f"🌐 Beacon URL: {beacon_url}")
+    print(f"   -> Beacon URL: {beacon_url}")
 
-    # 5️⃣ Embed metadata into the docx
+    # Step 5: Embed metadata into the DOCX
     embedded_docx = embed_metadata_into_docx(latest_doc, u, beacon_url)
 
-    # 6️⃣ Write EXIF-like PNG metadata (optional — image watermarking)
+    # Step 6: Optionally embed EXIF-style PNG metadata
+    print("\n[6/7] Checking for base image to embed UUID ...")
     placeholder_image = Path("assets/base.png")
     if placeholder_image.exists():
         stego_out = OUT_DIR / f"uuid_{u}.png"
         write_png_text(str(placeholder_image), str(stego_out), "HoneyUUID", u)
-        print(f"🖼️ Embedded HoneyUUID into PNG: {stego_out}")
+        print(f"   -> UUID embedded into PNG: {stego_out}")
     else:
-        print("⚠️ No base image found, skipping PNG embedding.")
+        print("   -> No base image found. Skipping PNG embedding.")
 
-    # 7️⃣ Mark deployment
+    # Step 7: Mark deployment
+    print("\n[7/7] Marking deployment in manifest ...")
     manifest = OUT_DIR / f"manifest_{u}.json"
     mark_deployed(u, str(manifest))
 
+    # Write summary file
     summary = {
         "uuid": u,
         "docx": str(embedded_docx),
         "beacon_url": beacon_url,
         "manifest": str(manifest),
     }
-    with open(OUT_DIR / f"summary_{u}.json", "w", encoding="utf-8") as f:
+    summary_path = OUT_DIR / f"summary_{u}.json"
+    with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
-    print("\n🎯 Pipeline complete.")
-    print(f"UUID: {u}")
-    print(f"Final DOCX: {embedded_docx}")
-    print(f"Manifest: {manifest}")
+    print("\n=== PIPELINE COMPLETE ===")
+    print(f"Generated UUID: {u}")
+    print(f"Final Honeydoc: {embedded_docx}")
+    print(f"Beacon URL: {beacon_url}")
+    print(f"Manifest saved to: {manifest}")
+    print(f"Summary file saved to: {summary_path}\n")
 
 
 if __name__ == "__main__":
