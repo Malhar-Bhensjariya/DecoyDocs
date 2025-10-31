@@ -1,76 +1,80 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from embedder.metadata import read_docx_custom_property
 import requests
+from pathlib import Path
 
 DB_PATH = "honeypot.db"
 DOC_PATH = "out/Corporate_Strategy_and_Growth_Report_-_Q1_2026_e19b1de3_embedded.docx"
 
-# --- Initialize DB if not exists ---
 def init_db():
+    """Ensure test_logs table exists for recording beacon test results."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS test_logs
-                 (uuid TEXT, beacon_url TEXT, status TEXT, country TEXT, city TEXT, time TEXT)''')
+                 (uuid TEXT, beacon_url TEXT, status TEXT, time TEXT)''')
     conn.commit()
     conn.close()
+    print("[1] Database initialized or verified.")
 
-# --- Read metadata from DOCX ---
 def extract_docx_metadata(doc_path):
+    """Read embedded properties from a DOCX file."""
+    print(f"[2] Reading metadata from DOCX: {doc_path}")
     honey_uuid = read_docx_custom_property(doc_path, "HoneyUUID")
     beacon_url = read_docx_custom_property(doc_path, "BeaconURL")
-    print(f"Extracted Metadata:")
-    print(f"  HoneyUUID  → {honey_uuid}")
-    print(f"  BeaconURL  → {beacon_url}")
+
+    if not honey_uuid:
+        print("   -> No HoneyUUID property found.")
+    else:
+        print(f"   -> HoneyUUID detected: {honey_uuid}")
+
+    if not beacon_url:
+        print("   -> No BeaconURL property found.")
+    else:
+        print(f"   -> BeaconURL detected: {beacon_url}")
+
     return honey_uuid, beacon_url
 
-# --- Optional: Simulate beacon hit ---
 def trigger_beacon(url):
+    """Attempt to simulate beacon trigger by requesting the embedded URL."""
+    print(f"[3] Simulating beacon trigger...\n    Target: {url}")
     try:
-        print(f"\nPinging beacon URL: {url}")
         r = requests.get(url, timeout=5)
         status = f"{r.status_code} {r.reason}"
-        ip = r.raw._connection.sock.getpeername()[0] if hasattr(r.raw, "_connection") else None
+        print(f"   -> Beacon responded with: {status}")
     except Exception as e:
         status = f"Error: {e}"
-        ip = None
-    return status, ip
+        print(f"   -> Beacon trigger failed: {e}")
+    return status
 
-# --- Geo-IP lookup helper ---
-def geo_lookup(ip):
-    if not ip:
-        return "", ""
-    try:
-        r = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
-        return r.get("country", ""), r.get("city", "")
-    except Exception:
-        return "", ""
-
-# --- Save result to DB ---
-def log_result(uuid, beacon_url, status, country, city):
+def log_result(uuid, beacon_url, status):
+    """Record test results in local honeypot DB."""
+    print(f"[4] Logging result to database...")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    now = datetime.utcnow().isoformat()
-    c.execute("INSERT INTO test_logs VALUES (?, ?, ?, ?, ?, ?)",
-              (uuid, beacon_url, status, country, city, now))
+    now = datetime.now(timezone.utc).isoformat()
+    c.execute("INSERT INTO test_logs VALUES (?, ?, ?, ?)", (uuid, beacon_url, status, now))
     conn.commit()
     conn.close()
+    print(f"   -> Log entry created for UUID {uuid} at {now}")
 
-# --- Main test flow ---
 if __name__ == "__main__":
-    print("=== HoneyDoc Test Utility ===\n")
+    print("=== HONEYDOC TEST START ===")
     init_db()
-    uuid, beacon = extract_docx_metadata(DOC_PATH)
-    
-    if not beacon:
-        print("No BeaconURL found in DOCX. Exiting.")
-    else:
-        print("\nTriggering beacon (simulated document open)...")
-        status, ip = trigger_beacon(beacon)
-        country, city = geo_lookup(ip)
-        print(f"Response: {status}")
-        print(f"Resolved IP: {ip or 'Unknown'}")
-        print(f"Location: {country or 'N/A'}, {city or 'N/A'}")
 
-        log_result(uuid, beacon, status, country, city)
-        print("\n--- Logged beacon test successfully. ---")
+    if not Path(DOC_PATH).exists():
+        print(f"ERROR: DOCX not found at {DOC_PATH}")
+        exit(1)
+
+    uuid, beacon = extract_docx_metadata(DOC_PATH)
+    if not beacon:
+        print("No beacon URL available — cannot test trigger.")
+        exit(0)
+
+    status = trigger_beacon(beacon)
+    log_result(uuid, beacon, status)
+
+    print("\n=== TEST COMPLETE ===")
+    print(f"Tested UUID: {uuid}")
+    print(f"Beacon URL: {beacon}")
+    print(f"Result: {status}\n")
