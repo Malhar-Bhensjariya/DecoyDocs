@@ -2,8 +2,7 @@
 """
 test.py (batch)
 Scan out/ for all *_embedded.docx, read HoneyUUID + BeaconURL, optionally perform HTTP GET,
-and log results into honeypot.db. If the existing test_logs table has a mismatched schema,
-it will be recreated to the expected schema (5 columns).
+log results into honeypot.db, and print a short inference instead of raw error text for demos.
 
 Usage:
     python test.py            # runs HTTP checks
@@ -17,6 +16,8 @@ import requests
 from pathlib import Path
 import sys
 import argparse
+import socket
+import urllib3
 
 DB_PATH = "honeypot.db"
 OUT_DIR = Path("out")
@@ -25,13 +26,8 @@ EXPECTED_COLUMNS = ["uuid", "beacon_url", "status", "time", "filename"]
 
 
 def ensure_table_schema():
-    """Ensure test_logs table exists with the expected 5-column schema.
-    If an older/invalid schema exists, drop & recreate the table.
-    """
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
-    # If table doesn't exist, create it
     c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='test_logs';")
     if not c.fetchone():
         c.execute(
@@ -40,19 +36,15 @@ def ensure_table_schema():
         conn.commit()
         conn.close()
         return
-
-    # If table exists, verify columns
     c.execute("PRAGMA table_info(test_logs);")
-    cols = [row[1] for row in c.fetchall()]  # second field is name
+    cols = [row[1] for row in c.fetchall()]
     if cols != EXPECTED_COLUMNS:
-        # Recreate table with expected schema
         print("Existing test_logs schema mismatch. Recreating table with the expected schema.")
         c.execute("DROP TABLE IF EXISTS test_logs;")
         c.execute(
             "CREATE TABLE test_logs (uuid TEXT, beacon_url TEXT, status TEXT, time TEXT, filename TEXT)"
         )
         conn.commit()
-
     conn.close()
 
 
@@ -68,10 +60,46 @@ def extract_docx_metadata(doc_path: Path):
     return uuid, beacon
 
 
+def derive_inference_from_error(raw_status: str) -> str:
+    # Accepts raw status strings (e.g., "Error: <...>", "200 OK") and returns a short inference.
+    s = (raw_status or "").lower()
+    if "name or service not known" in s or "failed to resolve" in s or "nodename nor servname" in s:
+        return "Domain unresolved — beacon host is placeholder or DNS blocked."
+    if "connection refused" in s or "connectionreseterror" in s:
+        return "Connection refused — listener not running or port blocked by firewall."
+    if "timed out" in s or "timeout" in s or "max retries exceeded" in s:
+        return "Timeout — network blocked, no route, or listener too slow to respond."
+    if "ssl" in s or "certificate" in s or "tls" in s:
+        return "TLS/SSL problem — certificate issue or interception by proxy."
+    # HTTP status codes
+    if s.startswith("200") or "200 ok" in s:
+        return "Success — external resource fetched (beacon reached)."
+    if s.startswith("204") or "204 " in s:
+        return "Success (no content) — beacon endpoint acknowledged the request."
+    if s.startswith("3"):
+        return "Redirect — request was redirected (CDN or proxy)."
+    if s.startswith("4"):
+        return "Client error — resource reachable but access denied or invalid request."
+    if s.startswith("5"):
+        return "Server error — beacon reachable but server failed to handle request."
+    return "Unknown network outcome — check raw status or logs."
+
+
 def trigger_beacon(url, timeout=6):
     try:
+        # run a real request and return HTTP status text
         r = requests.get(url, timeout=timeout)
-        return f"{r.status_code} {r.reason}"
+        raw = f"{r.status_code} {r.reason}"
+        return raw
+    except requests.exceptions.SSLError as e:
+        return f"Error: SSL error: {e}"
+    except requests.exceptions.ConnectTimeout as e:
+        return f"Error: Timeout: {e}"
+    except requests.exceptions.ReadTimeout as e:
+        return f"Error: Read timeout: {e}"
+    except requests.exceptions.ConnectionError as e:
+        # ConnectionError wraps several lower-level socket errors; include message
+        return f"Error: Connection error: {e}"
     except Exception as e:
         return f"Error: {e}"
 
@@ -107,14 +135,19 @@ def main(no_http: bool):
 
         if not beacon:
             status = "NO_BEACON"
-            print("    No beacon URL — skipping HTTP test.")
+            inference = "No beacon URL present in document."
+            print(f"    {inference}")
         elif no_http:
             status = "SKIPPED_HTTP"
-            print("    HTTP test skipped by flag.")
+            inference = "HTTP test skipped by flag."
+            print(f"    {inference}")
         else:
             print("    Triggering beacon (HTTP GET)...")
-            status = trigger_beacon(beacon)
-            print(f"    Result: {status}")
+            raw_status = trigger_beacon(beacon)
+            inference = derive_inference_from_error(raw_status)
+            print(f"    Result: {raw_status}")
+            print(f"    Inference: {inference}")
+            status = raw_status
 
         log_result(uuid, beacon, status, doc.name)
         print("    Logged.\n")
