@@ -402,14 +402,8 @@ def main(argv: List[str]):
             avoid_terms = list(set(avoid_terms))
 
         # Vary title, department, style for uniqueness
-        variations = [
-            ("", "", ""),
-            (" - Marketing Department", "Focus on marketing metrics and campaigns.", "Use a promotional tone."),
-            (" - Engineering Division", "Emphasize technical achievements and R&D.", "Adopt a technical writing style.")
-        ]
-        var_title, var_context, var_style = variations[i % len(variations)]
-        title = base_title + var_title
-        context = (args.context or "") + " " + var_context + " " + var_style
+        title = base_title
+        context = args.context or ""
 
         prompt = build_prompt(args.template, title, context, avoid_topics, avoid_terms)
 

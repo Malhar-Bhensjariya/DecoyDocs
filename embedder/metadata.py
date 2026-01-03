@@ -58,3 +58,8 @@ def read_docx_custom_property(docx_path: str, prop_name: str) -> Optional[str]:
             vt = prop.find('{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}lpwstr')
             return vt.text if vt is not None else None
     return None
+
+# TODO: Implement conditional metadata embedding in DOCX.
+# Future enhancement: Embed UUID/beacon conditionally, e.g., only if access count exceeds threshold
+# or if the document is opened outside expected parameters (e.g., non-corporate IP).
+# This could involve querying a central access log or using embedded counters.

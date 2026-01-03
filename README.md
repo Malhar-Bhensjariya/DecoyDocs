@@ -24,7 +24,7 @@ This repository contains specification, architecture, and an implementation road
   Embed a UUID in each generated document so that every file access is attributable to a specific honeytoken.
 
 * **Similarity Enforcement**
-  Generate 3 documents with enforced uniqueness using Sentence-BERT embeddings and cosine similarity gates.
+  Generate documents with enforced uniqueness using Sentence-BERT embeddings and cosine similarity gates across all documents.
 
 * **LibreOffice Compatibility**
   Documents are optimized for clean opening in LibreOffice Writer and Draw on Linux, using OOXML-compliant formats without Windows-specific features.
@@ -37,6 +37,21 @@ This repository contains specification, architecture, and an implementation road
 
 * **Alerting**
   Webhook, email, or push notification integration to notify SOC analysts about suspicious access.
+
+---
+
+## Unique Advantages Over Traditional Honeypots
+
+DecoyDocs differs from typical honeypot systems (e.g., network traps or basic file monitors) by specializing in **document exfiltration detection** with advanced stealth and multi-layered tracking. Key differentiators include:
+
+* **Multi-Trigger Detection**: Combines metadata embedding, beacon URLs, and steganography for robust, hard-to-evade alerts—unlike single-method systems.
+* **Per-File Attribution**: Unique UUIDs enable precise tracking of individual documents, providing detailed forensics (e.g., "Document X accessed by IP Y at time Z").
+* **Global Similarity Enforcement**: Ensures all documents are unique via AI-powered checks, making decoys more realistic and scalable.
+* **Linux & LibreOffice Optimized**: Designed for cross-platform reliability without Windows-specific features like macros, ensuring clean operation in enterprise Linux environments.
+* **Decoupled Architecture**: Templates and folders are independent, allowing flexible organization without code changes—ideal for dynamic deployments.
+* **Ethical & Passive**: No executable content or active code; focuses on passive tracking for defensive, authorized use only.
+
+These features make DecoyDocs a sophisticated toolkit for blue teams, turning realistic decoy documents into proactive exfiltration detectors.
 
 ---
 
@@ -72,8 +87,8 @@ This repository contains specification, architecture, and an implementation road
 1. Install dependencies: `pip install -r requirements.txt`
 2. Set GEMINI_API_KEY in llm-docgen/.env
 3. Run pipeline: `python pipeline.py`
-4. Pipeline generates 3 unique documents, embeds metadata, outputs to out/
-5. Test documents: `libreoffice --headless out/*.docx` (should open cleanly)
+4. Pipeline generates 5 unique documents (one per template), embeds metadata, outputs to out/ subfolders
+5. Test documents: `libreoffice --headless out/*/*.docx` (should open cleanly)
 6. Deploy honeypot server for beacon collection.
 
 ---
@@ -88,10 +103,19 @@ This repository contains specification, architecture, and an implementation road
 
 ## Similarity Enforcement Logic
 
-- Document 1: Generated freely.
-- Document 2: If similarity >= 0.80 to Doc 1, regenerate with avoid lists from Doc 1.
-- Document 3: Compare to Doc 1 and 2, aggregate avoid lists.
-- Loop until 3 unique documents exist.
+- Documents are generated with enforced uniqueness using Sentence-BERT embeddings and cosine similarity gates.
+- Cosine similarity threshold (0.80) enforced across all generated documents, regardless of template or output folder.
+- Similarity checks are global and decoupled from folder structure.
+
+---
+
+## Template and Folder Decoupling
+
+- Templates in `llm-docgen/templates.py` are used for convenience in generating varied document types.
+- Templates are not authoritative; they serve only the current simulation requirement of generating 5 documents (one per template).
+- Output folder names represent logical document categories (e.g., Finance, HR) and are independent of template keys.
+- A configurable mapping defines `template_key → output_folder` to place documents in appropriate directories.
+- The system is designed to survive folder restructuring without code changes, as paths are resolved explicitly and no directory inference occurs.
 
 ---
 
@@ -147,6 +171,11 @@ This repository contains specification, architecture, and an implementation road
 ├── llm-docgen/          # Gemini-based generation
 ├── embedder/            # Metadata embedding
 ├── generated_docs/      # Intermediate docs
-├── out/                 # Final embedded docs
+├── out/                 # Final embedded docs in subfolders (e.g., Finance/, HR/)
+│   ├── Finance/
+│   ├── HR/
+│   ├── Strategy/
+│   ├── Sales/
+│   └── Engineering/
 └── tests/               # Validation scripts
 ```

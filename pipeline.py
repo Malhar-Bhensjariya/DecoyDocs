@@ -24,6 +24,15 @@ OUT_DIR = Path("out")
 BEACON_DOMAIN = "cdn-docs-local.test"
 SIMILARITY_THRESHOLD = 0.80
 
+# Mapping from template key to output folder
+TEMPLATE_TO_FOLDER = {
+    "generic_report": "Strategy",
+    "employee_bonus": "HR",
+    "q3_financial": "Finance",
+    "hr_review": "Engineering",
+    "sales_pipeline": "Sales"
+}
+
 
 def generate_single_doc(avoid_topics=None, avoid_terms=None):
     """Generate a single document with optional avoid lists."""
@@ -105,15 +114,14 @@ def extract_avoid_from_text(text: str):
     return topics, terms
 
 
-def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str) -> Path:
+def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str, output_path: Path) -> Path:
     """Embed UUID and beacon URL into DOCX metadata."""
-    ensure_dir(OUT_DIR)
-    out_path = OUT_DIR / f"{docx_path.stem}_embedded.docx"
-    print(f"Embedding metadata into DOCX: {docx_path} -> {out_path}")
-    write_docx_custom_property(str(docx_path), str(out_path), "HoneyUUID", uuid)
-    write_docx_custom_property(str(out_path), str(out_path), "BeaconURL", beacon_url)
+    ensure_dir(output_path.parent)
+    print(f"Embedding metadata into DOCX: {docx_path} -> {output_path}")
+    write_docx_custom_property(str(docx_path), str(output_path), "HoneyUUID", uuid)
+    write_docx_custom_property(str(output_path), str(output_path), "BeaconURL", beacon_url)
     print("Metadata embedded successfully.")
-    return out_path
+    return output_path
 
 
 def main():
@@ -122,24 +130,27 @@ def main():
     ensure_dir(OUT_DIR)
     init_db()
 
-    # Step 1: Generate 3 unique docs with internal similarity checks
-    print("\n[1/5] Generating 3 documents with similarity enforcement...")
-    subprocess.run(
-        ["python3", "llm-docgen/generate_docs.py", "--count", "3", "--template", "generic_report"],
-        check=True,
-    )
+    # Step 1: Generate 5 documents, one per template
+    templates = list(TEMPLATE_TO_FOLDER.keys())
+    print(f"\n[1/5] Generating {len(templates)} documents with one per template...")
+    for template in templates:
+        print(f"Generating document for template: {template}")
+        subprocess.run(
+            ["python3", "llm-docgen/generate_docs.py", "--count", "1", "--template", template],
+            check=True,
+        )
     print("Document generation complete.")
 
-    # Step 2: Find the 3 generated docs
+    # Step 2: Find the 5 generated docs
     docx_files = list(GENERATED_DIR.glob("*.docx"))
     docx_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)  # Most recent first
-    if len(docx_files) < 3:
-        raise ValueError("Not enough DOCX files generated.")
-    docs = docx_files[:3]
+    if len(docx_files) < len(templates):
+        raise ValueError(f"Not enough DOCX files generated. Expected {len(templates)}, got {len(docx_files)}.")
+    docs = docx_files[:len(templates)]
 
     # Read texts for similarity matrix
     texts = [read_doc_text(doc) for doc in docs]
-    doc_labels = [f"doc_{i+1}" for i in range(3)]
+    doc_labels = [f"doc_{i+1}" for i in range(len(templates))]
     doc_tuples = list(zip(doc_labels, texts))
 
     # Compute similarity matrix
@@ -148,29 +159,43 @@ def main():
     print("Cosine Similarity Matrix:")
     print(sim_matrix)
 
+    # Check global similarity
+    if check_similarity_threshold(doc_tuples, SIMILARITY_THRESHOLD):
+        print("Warning: Some documents have similarity >= threshold. Enforcement not fully implemented; proceeding.")
+
     # Step 3: Embed metadata into each doc
     uuids = []
     embedded_docs = []
     for i, docx_path in enumerate(docs):
-        print(f"\n[3.{i+1}/5] Embedding metadata for {docx_path.name}...")
+        template = templates[i]
+        folder = TEMPLATE_TO_FOLDER[template]
+        output_dir = OUT_DIR / folder
+        print(f"\n[3.{i+1}/5] Embedding metadata for {docx_path.name} (template: {template}, folder: {folder})...")
 
         u = gen_uuid()
-        reserve_uuid(u, label=f"doc_{i+1}", template="llm_doc")
+        reserve_uuid(u, label=f"doc_{i+1}", template=template)
         uuids.append(u)
         print(f"Reserved UUID: {u}")
 
         beacon_url = build_beacon_url(u, domain=BEACON_DOMAIN)
         print(f"Beacon URL: {beacon_url}")
 
-        embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url)
+        embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
         embedded_docs.append(embedded_docx)
+
+    # TODO: Implement conditional beacon triggering in pipeline.
+    # Future enhancement: Add checks before embedding beacons, e.g., based on document template,
+    # deployment context, or access history. For example, only embed active beacons for high-risk docs.
+    # This requires integration with a monitoring system to track opens.
 
     # Step 4: Optional PNG
     print("\n[4/5] Checking for base image...")
     placeholder_image = Path("assets/base.png")
     if placeholder_image.exists():
-        for u in uuids:
-            stego_out = OUT_DIR / f"uuid_{u}.png"
+        for i, u in enumerate(uuids):
+            template = templates[i]
+            folder = TEMPLATE_TO_FOLDER[template]
+            stego_out = OUT_DIR / folder / f"uuid_{u}.png"
             write_png_text(str(placeholder_image), str(stego_out), "HoneyUUID", u)
             print(f"UUID embedded into PNG: {stego_out}")
     else:
@@ -179,7 +204,10 @@ def main():
     # Step 5: Mark deployments
     print("\n[5/5] Marking deployments...")
     for i, u in enumerate(uuids):
-        manifest = OUT_DIR / f"manifest_{u}.json"
+        template = templates[i]
+        folder = TEMPLATE_TO_FOLDER[template]
+        output_dir = OUT_DIR / folder
+        manifest = output_dir / f"manifest_{u}.json"
         mark_deployed(u, str(manifest))
 
         summary = {
@@ -187,8 +215,10 @@ def main():
             "docx": str(embedded_docs[i]),
             "beacon_url": build_beacon_url(u, domain=BEACON_DOMAIN),
             "manifest": str(manifest),
+            "template": template,
+            "folder": folder
         }
-        summary_path = OUT_DIR / f"summary_{u}.json"
+        summary_path = output_dir / f"summary_{u}.json"
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
 
@@ -200,7 +230,9 @@ def main():
     print(sim_matrix)
     print("UUID ↔ Document Mapping:")
     for i, u in enumerate(uuids):
-        print(f"{u} -> {embedded_docs[i].name}")
+        template = templates[i]
+        folder = TEMPLATE_TO_FOLDER[template]
+        print(f"{u} -> {embedded_docs[i].name} (template: {template}, folder: {folder})")
 
 
 if __name__ == "__main__":
