@@ -193,18 +193,26 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
     Create a professional-looking .docx file from LLM-generated text.
     Ensures realistic formatting (proper spacing, black headings, consistent fonts, and real bullet lists).
     """
+    # Set default font for LibreOffice compatibility
     from docx.shared import Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     doc = docx.Document()
+    # Set default font to LibreOffice compatible
+    style = doc.styles['Normal']
+    style.font.name = 'Liberation Serif'
+    style = doc.styles['Normal']
+    style.font.name = 'Liberation Serif'  # LibreOffice default
+    style.font.size = Pt(11)
 
     # ---------------------------
-    # Title — large, bold, centered
+    # Title — large, bold, centered, LibreOffice compatible font
     # ---------------------------
     title_paragraph = doc.add_paragraph()
     title_run = title_paragraph.add_run(title)
     title_run.bold = True
     title_run.font.size = Pt(20)
+    title_run.font.name = 'Liberation Serif'  # LibreOffice compatible
     title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Small space below title
@@ -228,6 +236,7 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
             para = doc.add_paragraph(style="List Bullet")
             run = para.add_run(clean)
             run.font.size = Pt(11)
+            run.font.name = "Liberation Serif"
             run.font.color.rgb = RGBColor(0, 0, 0)
             para.paragraph_format.space_before = Pt(2)
             para.paragraph_format.space_after = Pt(2)
@@ -238,6 +247,7 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
             run = para.add_run(p_text)
             run.bold = True
             run.font.size = Pt(11)
+            run.font.name = "Liberation Serif"
             run.font.color.rgb = RGBColor(0, 0, 0)
             para.paragraph_format.space_before = Pt(0)
             para.paragraph_format.space_after = Pt(2)
@@ -254,6 +264,7 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
             run = para.add_run(clean)
             run.bold = True
             run.font.size = Pt(14)
+            run.font.name = "Liberation Serif"
             run.font.color.rgb = RGBColor(0, 0, 0)
             para.alignment = WD_ALIGN_PARAGRAPH.LEFT
             # tighter vertical spacing (was causing too much gap earlier)
@@ -266,6 +277,7 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
             para.style = "Normal"
             for run in para.runs:
                 run.font.size = Pt(11)
+                run.font.name = "Liberation Serif"  # LibreOffice compatible
                 run.font.color.rgb = RGBColor(0, 0, 0)
             para.paragraph_format.space_before = Pt(0)
             para.paragraph_format.space_after = Pt(6)
@@ -298,14 +310,39 @@ def create_docx(title: str, body: str, metadata: dict, output_path: Path):
 
 
 
-def build_prompt(template_name: Optional[str], title: Optional[str], context: Optional[str]) -> str:
-    """Build a generation prompt from template and optional context."""
+def extract_avoid_lists(text: str) -> tuple:
+    """Extract topics and terminology to avoid in regeneration."""
+    # Simple extraction: headings as topics, key nouns as terms
+    lines = text.split('\n')
+    topics = []
+    terms = []
+    for line in lines:
+        line = line.strip()
+        if line.isupper() or line.startswith('**') or line.startswith('###'):
+            topics.append(line.replace('**', '').replace('#', '').strip())
+        # Extract potential terms (simple: words >4 chars)
+        words = [w.strip('.,') for w in line.split() if len(w) > 4 and w.isalpha()]
+        terms.extend(words[:5])  # limit
+    return list(set(topics)), list(set(terms))
+
+
+def build_prompt(template_name: Optional[str], title: Optional[str], context: Optional[str], avoid_topics: list = None, avoid_terms: list = None) -> str:
     template_entry = TEMPLATES.get(template_name, TEMPLATES["generic_report"])
     prompt_text = template_entry["prompt"] if isinstance(template_entry, dict) else template_entry
     title_part = f"Document title: {title}\n\n" if title else ""
     context_part = f"Context:\n{context}\n\n" if context else ""
+
+    avoid_part = ""
+    if avoid_topics or avoid_terms:
+        avoid_part = "\n\nAVOID the following to ensure uniqueness:\n"
+        if avoid_topics:
+            avoid_part += f"- Topics: {', '.join(avoid_topics)}\n"
+        if avoid_terms:
+            avoid_part += f"- Terminology: {', '.join(avoid_terms)}\n"
+        avoid_part += "Make this document distinct in content, style, and focus.\n\n"
+
     return (
-        f"{title_part}{context_part}{prompt_text}\n\n"
+        f"{title_part}{context_part}{avoid_part}{prompt_text}\n\n"
         "Produce a realistic, structured professional document (HR, business, finance, etc.). "
         "Use headings and short paragraphs. Prefer plain text or Markdown (use headings, bold, lists, and simple tables). "
         "Do not include notes about being AI-generated or include internal debug metadata in the visible document."
@@ -315,12 +352,13 @@ def build_prompt(template_name: Optional[str], title: Optional[str], context: Op
 
 def main(argv: List[str]):
     parser = argparse.ArgumentParser(description="LLM Document Generator (Gemini)")
-    parser.add_argument("--count", type=int, default=1)
+    parser.add_argument("--count", type=int, default=3, help="Number of documents to generate (default 3)")
     parser.add_argument("--template", type=str, default=None)
     parser.add_argument("--title", type=str, default=None)
     parser.add_argument("--context", type=str, default=None)
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--max-tokens", type=int, default=800)
+    parser.add_argument("--similarity-threshold", type=float, default=0.80)
     args = parser.parse_args(argv)
 
     api_key = load_api_key_from_env_file()
@@ -333,35 +371,86 @@ def main(argv: List[str]):
     out_dir = ensure_output_folder(__file__)
     print(f"Output folder: {out_dir}")
 
+    # Import similarity module
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from similarity import check_similarity_threshold, compute_similarity_matrix
+
+    generated_docs = []  # list of (uuid, text, title, metadata)
+
     for i in range(args.count):
         template_data = TEMPLATES.get(args.template, TEMPLATES["generic_report"])
-        title = args.title or (template_data["title"] if isinstance(template_data, dict) else "Company Report")
+        base_title = args.title or (template_data["title"] if isinstance(template_data, dict) else "Company Report")
         uid = short_uuid()
         metadata = {
             "uuid": uid,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "model": args.model,
-            "prompt_summary": title,
+            "prompt_summary": base_title,
             "template_used": args.template or "generic_report",
             "source_script": Path(__file__).name,
         }
-        prompt = build_prompt(args.template, title, args.context)
 
-        #print(f"[{i+1}/{args.count}] Generating '{title}' (uuid={uid}) ...")
-        print(f"Generating '{title}' (uuid={uid}) ...")
+        # Build avoid lists from previous docs
+        avoid_topics = []
+        avoid_terms = []
+        if generated_docs:
+            for prev_uuid, prev_text, _, _ in generated_docs:
+                t, terms = extract_avoid_lists(prev_text)
+                avoid_topics.extend(t)
+                avoid_terms.extend(terms)
+            avoid_topics = list(set(avoid_topics))
+            avoid_terms = list(set(avoid_terms))
+
+        # Vary title, department, style for uniqueness
+        variations = [
+            ("", "", ""),
+            (" - Marketing Department", "Focus on marketing metrics and campaigns.", "Use a promotional tone."),
+            (" - Engineering Division", "Emphasize technical achievements and R&D.", "Adopt a technical writing style.")
+        ]
+        var_title, var_context, var_style = variations[i % len(variations)]
+        title = base_title + var_title
+        context = (args.context or "") + " " + var_context + " " + var_style
+
+        prompt = build_prompt(args.template, title, context, avoid_topics, avoid_terms)
+
+        print(f"Generating document {i+1}/{args.count}: '{title}' (uuid={uid}) ...")
         try:
             text = generate_text(client, prompt, model=args.model, max_output_tokens=args.max_tokens)
-            text = generate_text(client, prompt, model=args.model, max_output_tokens=args.max_tokens)
             text = clean_text(text)
+
+            # Check similarity if not first doc
+            if generated_docs:
+                temp_docs = generated_docs + [(uid, text)]
+                if check_similarity_threshold(temp_docs, args.similarity_threshold):
+                    print(f"  Similarity too high, regenerating...")
+                    # Regenerate with stronger avoid
+                    avoid_topics.extend(["budget", "performance", "strategy"])  # add defaults
+                    prompt = build_prompt(args.template, title, context, avoid_topics, avoid_terms)
+                    text = generate_text(client, prompt, model=args.model, max_output_tokens=args.max_tokens)
+                    text = clean_text(text)
+                    # Check again
+                    if check_similarity_threshold(generated_docs + [(uid, text)], args.similarity_threshold):
+                        print(f"  Still too similar, skipping for now (implement loop later)")
+                        continue
+
+            generated_docs.append((uid, text, title, metadata))
+            docx_file, meta_file = create_docx(title, text, metadata, out_dir)
+            print(f"Saved: {docx_file.name}  |  Metadata: {meta_file.name}")
 
         except Exception as e:
             print(f"Generation error: {e}")
             metadata["error"] = str(e)
             continue
 
-        docx_file, meta_file = create_docx(title, text, metadata, out_dir)
-        print(f"Saved: {docx_file.name}  |  Metadata: {meta_file.name}")
         time.sleep(0.5)
+
+    # Output similarity matrix
+    if len(generated_docs) > 1:
+        print("\nCosine Similarity Matrix:")
+        matrix = compute_similarity_matrix(generated_docs)
+        uuids = [doc[0] for doc in generated_docs]
+        print("UUIDs:", uuids)
+        print(matrix)
 
 
 if __name__ == "__main__":
