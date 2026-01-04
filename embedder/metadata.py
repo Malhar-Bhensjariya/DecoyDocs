@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from typing import Optional
 import shutil
 import os
+import warnings
 from .utils import ensure_dir
 
 def write_docx_custom_property(src_docx: str, dest_docx: str, prop_name: str, prop_value: str) -> None:
@@ -13,36 +14,37 @@ def write_docx_custom_property(src_docx: str, dest_docx: str, prop_name: str, pr
     """
     ensure_dir(os.path.dirname(dest_docx) or ".")
 
-    # ✅ Skip copy if same path
+    # ✅ Skip copy if same path (no print to avoid clutter)
     if os.path.abspath(src_docx) != os.path.abspath(dest_docx):
         shutil.copy2(src_docx, dest_docx)
-    else:
-        print(f"Skipping copy: {src_docx} and {dest_docx} are the same file")
+    # else: silently skip
 
-    with zipfile.ZipFile(dest_docx, 'a') as z:
-        try:
-            content = z.read('docProps/custom.xml').decode('utf-8')
-            root = ET.fromstring(content)
-        except KeyError:
-            # create basic structure
-            ns = {
-                'cp': 'http://schemas.openxmlformats.org/officeDocument/2006/custom-properties',
-                'vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'
-            }
-            root = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/custom-properties}Properties')
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Duplicate name:")
+        with zipfile.ZipFile(dest_docx, 'a') as z:
+            try:
+                content = z.read('docProps/custom.xml').decode('utf-8')
+                root = ET.fromstring(content)
+            except KeyError:
+                # create basic structure
+                ns = {
+                    'cp': 'http://schemas.openxmlformats.org/officeDocument/2006/custom-properties',
+                    'vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'
+                }
+                root = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/custom-properties}Properties')
 
-        # Append property (simple mode)
-        prop = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/custom-properties}property')
-        prop.set('fmtid', '{D5CDD505-2E9C-101B-9397-08002B2CF9AE}')
-        prop.set('pid', '2')
-        prop.set('name', prop_name)
-        vt_lpwstr = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}lpwstr')
-        vt_lpwstr.text = prop_value
-        prop.append(vt_lpwstr)
-        root.append(prop)
+            # Append property (simple mode)
+            prop = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/custom-properties}property')
+            prop.set('fmtid', '{D5CDD505-2E9C-101B-9397-08002B2CF9AE}')
+            prop.set('pid', '2')
+            prop.set('name', prop_name)
+            vt_lpwstr = ET.Element('{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}lpwstr')
+            vt_lpwstr.text = prop_value
+            prop.append(vt_lpwstr)
+            root.append(prop)
 
-        new_xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
-        z.writestr('docProps/custom.xml', new_xml)
+            new_xml = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+            z.writestr('docProps/custom.xml', new_xml)
 
 def read_docx_custom_property(docx_path: str, prop_name: str) -> Optional[str]:
     # simplistic reader: extract and search for name
