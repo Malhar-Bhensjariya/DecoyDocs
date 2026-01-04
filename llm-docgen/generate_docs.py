@@ -36,28 +36,20 @@ except Exception:
     print("Missing templates.py or import error. Ensure it exists in the same folder.")
     raise
 
-DEFAULT_MODEL = "gemini-1.5-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 def load_api_key_from_env_file() -> Optional[str]:
-    """Load GEMINI_API_KEY from .env and set GOOGLE_API_KEY for compatibility."""
+    """Load GEMINI_API_KEY from .env."""
     dotenv_path = Path(__file__).resolve().parent / ".env"
     if dotenv_path.exists():
         load_dotenv(dotenv_path)
-    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    if key:
-        os.environ["GOOGLE_API_KEY"] = key
-    return key
+    return os.getenv("GEMINI_API_KEY")
 
 
 def init_client(api_key: Optional[str]) -> genai.Client:
-    """Initialize the Gemini client with API key or fallback."""
-    try:
-        return genai.Client(api_key=api_key) if api_key else genai.Client()
-    except TypeError:
-        if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
-        return genai.Client()
+    """Initialize the Gemini client with API key."""
+    return genai.Client(api_key=api_key) if api_key else genai.Client()
 
 def clean_text(text: str) -> str:
     import re
