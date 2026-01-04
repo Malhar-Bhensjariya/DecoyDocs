@@ -36,7 +36,7 @@ except Exception:
     print("Missing templates.py or import error. Ensure it exists in the same folder.")
     raise
 
-DEFAULT_MODEL = "gemini-2.5-pro"
+DEFAULT_MODEL = "gemini-1.5-flash"
 
 
 def load_api_key_from_env_file() -> Optional[str]:
@@ -81,9 +81,27 @@ def clean_text(text: str) -> str:
 
 
 def generate_text(client, prompt: str, model: str, max_output_tokens: int) -> str:
-    """Generate text using Gemini."""
-    resp = client.models.generate_content(model=model, contents=prompt)
-    return getattr(resp, "text", str(resp))
+    """Generate text using Gemini with retry on quota exceeded."""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            resp = client.models.generate_content(model=model, contents=prompt)
+            return getattr(resp, "text", str(resp))
+        except Exception as e:
+            error_str = str(e)
+            if '429' in error_str and attempt < max_retries - 1:
+                # Parse retry delay from error message
+                match = re.search(r"'retryDelay': '(\d+)s'", error_str)
+                if match:
+                    delay = int(match.group(1))
+                    print(f"Quota exceeded, retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    print("Quota exceeded, retrying in 60 seconds...")
+                    time.sleep(60)
+            else:
+                raise
+    raise Exception("Max retries exceeded for API call")
 
 
 def ensure_output_folder(script_file: str) -> Path:
