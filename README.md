@@ -60,7 +60,7 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 1. **Document Generation**
    - Google Gemini API generates initial documents.
    - Sentence-BERT computes embeddings for similarity checks.
-   - RAG-based regeneration ensures 3 unique documents.
+   - Iterative prompt refinement with similarity feedback ensures unique documents.
 
 2. **Similarity Validation**
    - Cosine similarity threshold (0.80) enforced.
