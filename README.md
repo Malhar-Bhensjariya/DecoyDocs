@@ -71,8 +71,9 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
    - Only occurs after document acceptance.
 
 4. **Honeypot / Collector Server**
-   - Flask API endpoints to receive beacon pings and metadata.
-   - Logs IP, timestamp, UUID, and available client metadata.
+   - Django REST Framework API endpoints that masquerade as SaaS asset servers (fonts, images, configs).
+   - Logs every access with detailed client fingerprinting, IP geolocation, and metadata.
+   - Provides a real-time dashboard for monitoring access events.
 
 5. **Dashboard & Analytics**
    - Web UI with real-time event stream, charts, and per-file drilldowns.
@@ -82,6 +83,38 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 
 ---
 
+## Honeypot Server
+
+The honeypot server is a Django-based web application that acts as a stealth document tracking system. It provides API endpoints that appear to be standard SaaS infrastructure (asset delivery, configuration, telemetry) but actually log and analyze document access events with comprehensive client fingerprinting.
+
+### Server Features
+
+* **Stealth Endpoints**: Masquerades as normal SaaS traffic (fonts, images, CSS, JSON configs, telemetry).
+* **Comprehensive Logging**: Captures IP address, geolocation, user agent parsing, OS/browser detection, client application info, and request metadata.
+* **Real-time Dashboard**: Web interface showing access events, statistics, charts, and document drilldowns.
+* **API Documentation**: Interactive Swagger/ReDoc interfaces for all endpoints.
+* **Deployment Ready**: Supports Heroku, Render, and traditional server deployments with PostgreSQL.
+
+### Key Endpoints
+
+- `/assets/media/{filename}` - Serves transparent PNGs while logging access
+- `/config/runtime.json` - Returns fake UI configs
+- `/telemetry/events` - Accepts telemetry data
+- `/fonts/{fontname}.woff2` - Serves minimal font files
+- `/dashboard/` - Monitoring dashboard
+
+### Data Captured
+
+Each access event logs:
+- Network: IP, ASN, ISP, geolocation, proxy/TOR detection
+- Application: User-Agent, Accept headers, OS/browser/client details
+- Request: Endpoint, method, query params, body
+- Correlation: Document CID, first access flag, session tracking
+
+---
+
+## Full Project Implementation Flow
+
 ## Linux Execution Flow
 
 1. Install dependencies: `pip install -r requirements.txt`
@@ -89,7 +122,9 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 3. Run pipeline: `python pipeline.py`
 4. Pipeline generates 5 unique documents (one per template), embeds metadata, outputs to out/ subfolders
 5. Test documents: `libreoffice --headless out/*/*.docx` (should open cleanly)
-6. Deploy honeypot server for beacon collection.
+6. Deploy honeypot server: `cd honeypot-server && pip install -r requirements.txt && python manage.py migrate && python manage.py runserver`
+7. Update embedder with live server URLs and re-embed documents
+8. Deploy documents to target environments and monitor via dashboard at `/dashboard/`
 
 ---
 
@@ -139,9 +174,11 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 ## Requirements
 
 * Python 3.9+
-* Google Gemini API key
-* LibreOffice (for testing)
+* Google Gemini API key (for document generation)
+* LibreOffice (for testing document compatibility)
 * Linux environment (Ubuntu/Debian recommended)
+* PostgreSQL (for production honeypot server deployment)
+* Cloud hosting platform (Heroku, Render, etc. for server deployment)
 
 ---
 
@@ -151,6 +188,8 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 2. Set API key in `llm-docgen/.env`
 3. `python pipeline.py`
 4. Check `out/` for embedded documents and similarity matrix output.
+5. Deploy honeypot server: `cd honeypot-server && pip install -r requirements.txt && python manage.py migrate && python manage.py runserver`
+6. Access dashboard at `http://localhost:8000/dashboard/`
 
 ---
 
@@ -170,6 +209,7 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 ├── similarity.py        # Embedding and similarity checks
 ├── llm-docgen/          # Gemini-based generation
 ├── embedder/            # Metadata embedding
+├── honeypot-server/     # Django tracking server
 ├── generated_docs/      # Intermediate docs
 ├── out/                 # Final embedded docs in subfolders (e.g., Finance/, HR/)
 │   ├── Finance/
