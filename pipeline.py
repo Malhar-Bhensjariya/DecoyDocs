@@ -19,6 +19,7 @@ from similarity import check_similarity_threshold, compute_similarity_matrix
 import numpy as np
 import requests
 from datetime import datetime
+from datetime import timezone
 
 # ---- Configuration ----
 GENERATED_DIR = Path("generated_docs")
@@ -126,6 +127,30 @@ def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str, output
     return output_path
 
 
+def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
+    """Convert a DOCX to PDF via headless LibreOffice for cross-platform compatibility."""
+    ensure_dir(output_dir)
+    libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
+    out_pdf = output_dir / f"{docx_path.stem}.pdf"
+    cmd = [
+        libreoffice_bin,
+        "--headless",
+        "--nologo",
+        "--nofirststartwizard",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        str(output_dir),
+        str(docx_path),
+    ]
+    print(f"Converting DOCX to PDF: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    if not out_pdf.exists():
+        raise FileNotFoundError(f"Expected PDF not found after conversion: {out_pdf}")
+    print(f"PDF ready at: {out_pdf}")
+    return out_pdf
+
+
 def main():
     print("=== DECOYDOCS PIPELINE START ===")
     ensure_dir(GENERATED_DIR)
@@ -168,6 +193,7 @@ def main():
     # Step 3: Embed metadata into each doc
     uuids = []
     embedded_docs = []
+    pdf_docs = []
     for i, docx_path in enumerate(docs):
         template = templates[i]
         folder = TEMPLATE_TO_FOLDER[template]
@@ -184,6 +210,10 @@ def main():
 
         embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
         embedded_docs.append(embedded_docx)
+
+        # Convert to PDF for Linux compatibility/consumers
+        embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
+        pdf_docs.append(embedded_pdf)
 
     # TODO: Implement conditional beacon triggering in pipeline.
     # Future enhancement: Add checks before embedding beacons, e.g., based on document template,
@@ -217,6 +247,7 @@ def main():
         summary = {
             "uuid": u,
             "docx": str(embedded_doc),
+            "pdf": str(pdf_docs[i]),
             "beacon_url": build_beacon_url(u, domain=BEACON_DOMAIN),
             "manifest": str(manifest),
             "template": template,
@@ -230,8 +261,9 @@ def main():
         documents_metadata.append({
             "uuid": u,
             "file_path": str(embedded_doc),
+            "pdf_path": str(pdf_docs[i]),
             "document_name": f"{template}_{i+1}",
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         })
 
     # Send metadata to honeypot server
@@ -249,13 +281,14 @@ def main():
     print("\n=== PIPELINE COMPLETE ===")
     print("Generated UUIDs:", uuids)
     print("Embedded Docs:", [str(d) for d in embedded_docs])
+    print("PDF Docs:", [str(p) for p in pdf_docs])
     print("Similarity Matrix:")
     print(sim_matrix)
     print("UUID ↔ Document Mapping:")
     for i, u in enumerate(uuids):
         template = templates[i]
         folder = TEMPLATE_TO_FOLDER[template]
-        print(f"{u} -> {embedded_docs[i].name} (template: {template}, folder: {folder})")
+        print(f"{u} -> {embedded_docs[i].name} / {pdf_docs[i].name} (template: {template}, folder: {folder})")
 
 
 if __name__ == "__main__":
