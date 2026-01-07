@@ -18,27 +18,7 @@ def build_pdf_with_assets(title: str, stego_path: str, beacon_url: str, out_name
       <body>
         <h1>{title}</h1>
         <p>Document UUID embedded in image.</p>
-        <img src="{beacon_url}" alt="remote-beacon" />
-        <p>Embedded image:</p>
-        <img src="file://{os.path.abspath(stego_path)}" alt="stego" />
-      </body>
-    </html>
-    """
-    tmp_html = os.path.join(output_dir, "tmp_embed.html")
-    with open(tmp_html, "w", encoding="utf-8") as f:
-        f.write(html)
-
-def build_pdf_with_assets(title: str, stego_path: str, beacon_url: str, out_name: str = None, output_dir: str = "out") -> Tuple[str, str]:
-    ensure_dir(output_dir)
-    out_name = safe_filename(out_name or f"{title}.pdf")
-    out_path = os.path.join(output_dir, out_name)
-
-    html = f"""
-    <html>
-      <body>
-        <h1>{title}</h1>
-        <p>Document UUID embedded in image.</p>
-        <img src="{beacon_url}" alt="remote-beacon" />
+        <img src="{beacon_url}" alt="remote-beacon" style="display:none;" />
         <p>Embedded image:</p>
         <img src="file://{os.path.abspath(stego_path)}" alt="stego" />
       </body>

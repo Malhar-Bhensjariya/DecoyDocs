@@ -17,11 +17,13 @@ from embedder.exif_meta import write_png_text
 from embedder.beacon import build_beacon_url
 from similarity import check_similarity_threshold, compute_similarity_matrix
 import numpy as np
+import requests
+from datetime import datetime
 
 # ---- Configuration ----
 GENERATED_DIR = Path("generated_docs")
 OUT_DIR = Path("out")
-BEACON_DOMAIN = "cdn-docs-local.test"
+BEACON_DOMAIN = "https://fyp-backend-98o5.onrender.com/api/beacon"
 SIMILARITY_THRESHOLD = 0.80
 
 # Mapping from template key to output folder
@@ -203,6 +205,7 @@ def main():
 
     # Step 5: Mark deployments
     print("\n[5/5] Marking deployments...")
+    documents_metadata = []
     for i, u in enumerate(uuids):
         template = templates[i]
         folder = TEMPLATE_TO_FOLDER[template]
@@ -210,9 +213,10 @@ def main():
         manifest = output_dir / f"manifest_{u}.json"
         mark_deployed(u, str(manifest))
 
+        embedded_doc = embedded_docs[i]
         summary = {
             "uuid": u,
-            "docx": str(embedded_docs[i]),
+            "docx": str(embedded_doc),
             "beacon_url": build_beacon_url(u, domain=BEACON_DOMAIN),
             "manifest": str(manifest),
             "template": template,
@@ -221,6 +225,25 @@ def main():
         summary_path = output_dir / f"summary_{u}.json"
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
+
+        # Collect metadata for API
+        documents_metadata.append({
+            "uuid": u,
+            "file_path": str(embedded_doc),
+            "document_name": f"{template}_{i+1}",
+            "created_at": datetime.utcnow().isoformat()
+        })
+
+    # Send metadata to honeypot server
+    api_url = "https://fyp-backend-98o5.onrender.com/api/documents/create"
+    try:
+        response = requests.post(api_url, json=documents_metadata)
+        if response.status_code == 200:
+            print("✅ Metadata sent to honeypot server successfully.")
+        else:
+            print(f"⚠️ Failed to send metadata: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"⚠️ Error sending metadata to server: {e}")
 
     # Output
     print("\n=== PIPELINE COMPLETE ===")

@@ -2,14 +2,17 @@
 from urllib.parse import urlencode
 from typing import Dict
 import datetime
+import uuid as uuid_lib
 
-DEFAULT_DOMAIN = "cdn-docs-local.test"
+DEFAULT_DOMAIN = "https://fyp-backend-98o5.onrender.com/api/beacon"
 
-def build_beacon_url(uuid: str, domain: str = DEFAULT_DOMAIN, path: str = "/assets/img.png", extra: Dict = None) -> str:
-    q = {"id": uuid, "ts": datetime.datetime.utcnow().isoformat()}
+def build_beacon_url(uuid: str, domain: str = DEFAULT_DOMAIN, path: str = "", extra: Dict = None) -> str:
+    q = {"resource_id": uuid}
+    # Add a random nonce to prevent caching and allow multiple triggers if needed
+    q["nonce"] = str(uuid_lib.uuid4())[:8]
     if extra:
         q.update(extra)
-    return f"https://{domain}{path}?{urlencode(q)}"
+    return f"{domain}{path}?{urlencode(q)}"
 
 # TODO: Implement conditional triggering for beacons to reduce detection risk.
 # Future enhancement: Add logic to trigger beacons only under specific conditions,

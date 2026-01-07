@@ -38,12 +38,12 @@ def main():
     reserve_uuid(u, label=args.label, template=args.title)
 
     stego_out = os.path.join(cfg.get("output_dir", "out"), f"stego_{u}.png")
+    beacon = build_beacon_url(u, domain=cfg.get("beacon_domain"))
+    data = json.dumps({"uuid": u, "beacon": beacon})
     if cfg["embed"].get("use_lsb", True):
-        lsb_embed(args.base_image, stego_out, u)
+        lsb_embed(args.base_image, stego_out, data)
     if cfg["embed"].get("use_png_text", True):
         write_png_text(stego_out, stego_out, "HoneyUUID", u)
-
-    beacon = build_beacon_url(u, domain=cfg.get("beacon_domain"))
     out_pdf, manifest_path = build_pdf_with_assets(args.title, stego_out, beacon, out_name=args.out_name)
     mark_deployed(u, manifest_path)
 

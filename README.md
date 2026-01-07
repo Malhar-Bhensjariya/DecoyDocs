@@ -18,7 +18,7 @@ This repository contains specification, architecture, and an implementation road
   Use Google Gemini API to generate highly realistic, contextual decoy documents tailored to target environments.
 
 * **Multi-layered Covert Triggers**
-  Embed UUID and beacon URL in document metadata for stealthy tracking.
+  Embed UUID and beacon URL in document metadata, steganography (LSB in images), and remote beacons for stealthy, multi-method tracking.
 
 * **Per-file Unique Fingerprints**
   Embed a UUID in each generated document so that every file access is attributable to a specific honeytoken.
