@@ -28,3 +28,4 @@ pillow
 sentence-transformers
 numpy
 scipy
+pypdf>=3.0.0

@@ -16,6 +16,7 @@ from embedder.uuid_manager import init_db, reserve_uuid, mark_deployed
 from embedder.metadata import write_docx_custom_property
 from embedder.exif_meta import write_png_text
 from embedder.beacon import build_beacon_url
+from embedder.pdf_beacon import embed_beacon_in_pdf, embed_beacon_in_docx
 from similarity import check_similarity_threshold, compute_similarity_matrix
 import numpy as np
 import requests
@@ -25,7 +26,12 @@ from datetime import timezone
 # ---- Configuration ----
 GENERATED_DIR = Path("generated_docs")
 OUT_DIR = Path("out")
-BEACON_DOMAIN = "https://fyp-backend-98o5.onrender.com/api/beacon"
+# Use environment variable to switch between test and production
+# Set API_BASE_URL=http://localhost:5000 for test server
+# Or leave unset/default for production
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://fyp-backend-98o5.onrender.com")
+BEACON_DOMAIN = f"{API_BASE_URL}/api/beacon"
+DOCUMENTS_API_URL = f"{API_BASE_URL}/api/documents/create"
 SIMILARITY_THRESHOLD = 0.80
 
 # Mapping from template key to output folder
@@ -240,14 +246,30 @@ def main():
         uuids.append(u)
         print(f"Reserved UUID: {u}")
 
-        beacon_url = build_beacon_url(u, domain=BEACON_DOMAIN)
+        beacon_url = build_beacon_url(u)  # Uses API_BASE_URL from env or default
         print(f"Beacon URL: {beacon_url}")
 
         embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
+        
+        # Embed active beacon trigger in DOCX (invisible hyperlink)
+        try:
+            embedded_docx = embed_beacon_in_docx(embedded_docx, beacon_url, embedded_docx)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not embed active beacon in DOCX: {e}")
+        
         embedded_docs.append(embedded_docx)
 
         # Convert to PDF for Linux compatibility/consumers
         embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
+        
+        # Embed active beacon trigger in PDF (invisible link annotation)
+        try:
+            embedded_pdf = embed_beacon_in_pdf(embedded_pdf, beacon_url, embedded_pdf)
+            print(f"✅ Active beacon trigger embedded in PDF")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not embed active beacon in PDF: {e}")
+            print(f"   PDF created but beacon may not auto-trigger. Error: {e}")
+        
         pdf_docs.append(embedded_pdf)
 
     # TODO: Implement conditional beacon triggering in pipeline.
@@ -283,7 +305,7 @@ def main():
             "uuid": u,
             "docx": str(embedded_doc),
             "pdf": str(pdf_docs[i]),
-            "beacon_url": build_beacon_url(u, domain=BEACON_DOMAIN),
+            "beacon_url": build_beacon_url(u),  # Uses API_BASE_URL from env or default
             "manifest": str(manifest),
             "template": template,
             "folder": folder
@@ -302,9 +324,8 @@ def main():
         })
 
     # Send metadata to honeypot server
-    api_url = "https://fyp-backend-98o5.onrender.com/api/documents/create"
     try:
-        response = requests.post(api_url, json=documents_metadata)
+        response = requests.post(DOCUMENTS_API_URL, json=documents_metadata)
         if response.status_code == 200:
             print("✅ Metadata sent to honeypot server successfully.")
         else:
