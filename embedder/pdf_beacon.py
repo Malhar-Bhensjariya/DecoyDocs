@@ -51,63 +51,10 @@ def embed_beacon_in_pdf(pdf_path: Path, beacon_url: str, output_path: Optional[P
         for page in reader.pages:
             writer.add_page(page)
         
-        # Method 1: Embed remote image that auto-loads (MOST RELIABLE)
-        # This works even if JavaScript is disabled!
+        # Method 1: Add invisible link annotation (works when clicked, most reliable)
         first_page = writer.pages[0]
         mediabox = first_page.mediabox
-        width = float(mediabox.width)
         height = float(mediabox.height)
-        
-        # Create an XObject (image) that references the remote beacon URL
-        # When PDF opens, viewer tries to load the image, triggering the beacon
-        try:
-            from pypdf.generic import StreamObject, DecodedStreamObject
-            
-            # Create image XObject with remote reference
-            img_xobject = StreamObject()
-            img_xobject.update({
-                NameObject("/Type"): NameObject("/XObject"),
-                NameObject("/Subtype"): NameObject("/Image"),
-                NameObject("/Width"): 1,
-                NameObject("/Height"): 1,
-                NameObject("/ColorSpace"): NameObject("/DeviceRGB"),
-                NameObject("/BitsPerComponent"): 8,
-                NameObject("/F"): DictionaryObject({
-                    NameObject("/FS"): NameObject("/URL"),
-                    NameObject("/F"): beacon_url
-                })
-            })
-            
-            # Minimal 1x1 pixel image data (white pixel)
-            img_xobject._data = b'\xFF\xFF\xFF'
-            img_ref = writer._add_object(img_xobject)
-            
-            # Add image to page resources
-            if "/Resources" not in first_page:
-                first_page[NameObject("/Resources")] = DictionaryObject()
-            resources = first_page[NameObject("/Resources")]
-            
-            if "/XObject" not in resources:
-                resources[NameObject("/XObject")] = DictionaryObject()
-            xobjects = resources[NameObject("/XObject")]
-            xobjects[NameObject("/BeaconImg")] = img_ref
-            
-            # Insert invisible image on page (1x1 pixel at top-left)
-            content = first_page.get_contents()
-            if content is None:
-                content = StreamObject()
-                first_page[NameObject("/Contents")] = writer._add_object(content)
-            
-            # Add drawing command for the image (invisible, 1x1 pixel)
-            content_data = content.get_data() if hasattr(content, 'get_data') else b''
-            new_content = content_data + f'\nq\n1 0 0 1 0 {height} cm\n/BeaconImg Do\nQ\n'.encode()
-            content._data = new_content
-            
-            print(f"   Remote image embedded (auto-triggers on PDF open)")
-        except Exception as img_err:
-            print(f"   Note: Remote image method failed ({img_err}), using fallback...")
-        
-        # Method 2: Add invisible link annotation (works when clicked)
         link_annotation = DictionaryObject({
             NameObject("/Type"): NameObject("/Annot"),
             NameObject("/Subtype"): NameObject("/Link"),
@@ -125,7 +72,7 @@ def embed_beacon_in_pdf(pdf_path: Path, beacon_url: str, output_path: Optional[P
         annot_ref = writer._add_object(link_annotation)
         first_page[NameObject("/Annots")].append(annot_ref)
         
-        # Method 3: Add JavaScript action (if JS enabled)
+        # Method 2: Add JavaScript action (if JS enabled)
         try:
             js_code = f"""
             // Auto-trigger beacon when PDF opens (if JavaScript enabled)
@@ -148,7 +95,8 @@ def embed_beacon_in_pdf(pdf_path: Path, beacon_url: str, output_path: Optional[P
             pass  # JavaScript not available, that's okay
         
         # Write output
-        with open(output_path, "wb") as out_file:
+        output_path_str = str(output_path)
+        with open(output_path_str, "wb") as out_file:
             writer.write(out_file)
         
         print(f"✅ Beacon embedded in PDF: {beacon_url}")
@@ -167,37 +115,35 @@ def _embed_beacon_simple(pdf_path: Path, beacon_url: str, output_path: Path) -> 
         writer = PdfWriter()
         
         for i, page in enumerate(reader.pages):
-            writer.add_page(page)
+            new_page = writer.add_page(page)
             
             # Add invisible link on first page only
             if i == 0:
-                mediabox = page.mediabox
+                mediabox = new_page.mediabox
                 height = float(mediabox.height)
                 
-                # Create minimal invisible link
-                link_dict = {
-                    "/Type": "/Annot",
-                    "/Subtype": "/Link",
-                    "/Rect": [0, height - 1, 1, height],
-                    "/Border": [0, 0, 0],
-                    "/A": {
-                        "/S": "/URI",
-                        "/URI": beacon_url
-                    },
-                    "/F": 4  # Invisible
-                }
+                # Create invisible link annotation
+                link_annotation = DictionaryObject({
+                    NameObject("/Type"): NameObject("/Annot"),
+                    NameObject("/Subtype"): NameObject("/Link"),
+                    NameObject("/Rect"): ArrayObject([0, height - 1, 1, height]),
+                    NameObject("/Border"): ArrayObject([0, 0, 0]),
+                    NameObject("/A"): DictionaryObject({
+                        NameObject("/S"): NameObject("/URI"),
+                        NameObject("/URI"): beacon_url
+                    }),
+                    NameObject("/F"): 4  # Invisible
+                })
                 
                 # Add to page annotations
-                if "/Annots" not in page:
-                    page[NameObject("/Annots")] = ArrayObject()
+                if "/Annots" not in new_page:
+                    new_page[NameObject("/Annots")] = ArrayObject()
                 
-                annot_ref = writer._add_object(DictionaryObject({
-                    NameObject(k): v if not isinstance(v, str) else NameObject(v) if v.startswith("/") else v
-                    for k, v in link_dict.items()
-                }))
-                page[NameObject("/Annots")].append(annot_ref)
+                annot_ref = writer._add_object(link_annotation)
+                new_page[NameObject("/Annots")].append(annot_ref)
         
-        with open(output_path, "wb") as out_file:
+        output_path_str = str(output_path)
+        with open(output_path_str, "wb") as out_file:
             writer.write(out_file)
         
         print(f"✅ Beacon embedded (simple method) in PDF")
@@ -238,8 +184,10 @@ def embed_beacon_in_docx(docx_path: Path, beacon_url: str, output_path: Optional
         shutil.copy2(docx_path, output_path)
     
     # Open DOCX as ZIP
-    with zipfile.ZipFile(output_path, 'r') as zin:
-        with zipfile.ZipFile(output_path + '.tmp', 'w', zipfile.ZIP_DEFLATED) as zout:
+    output_path_str = str(output_path)
+    tmp_path = output_path_str + '.tmp'
+    with zipfile.ZipFile(output_path_str, 'r') as zin:
+        with zipfile.ZipFile(tmp_path, 'w', zipfile.ZIP_DEFLATED) as zout:
             # Copy all files except document.xml and its relationships
             for item in zin.infolist():
                 if item.filename not in ['word/document.xml', 'word/_rels/document.xml.rels']:
@@ -321,7 +269,7 @@ def embed_beacon_in_docx(docx_path: Path, beacon_url: str, output_path: Optional
             zout.writestr('word/_rels/document.xml.rels', rels_xml_new)
     
     # Replace original with modified
-    shutil.move(output_path + '.tmp', output_path)
+    shutil.move(tmp_path, output_path_str)
     
     print(f"✅ Remote image beacon embedded in DOCX (auto-triggers on open!)")
     return output_path
