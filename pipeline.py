@@ -186,11 +186,26 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
     # Run with error capture
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     
+    # Always show output for debugging
+    if result.stdout:
+        print(f"LibreOffice stdout: {result.stdout}")
+    if result.stderr:
+        print(f"LibreOffice stderr: {result.stderr}")
+    
     if result.returncode != 0:
-        print(f"⚠️ LibreOffice conversion error (return code {result.returncode}):")
-        print(f"   stdout: {result.stdout}")
-        print(f"   stderr: {result.stderr}")
-        raise RuntimeError(f"LibreOffice failed to convert DOCX: {result.stderr}")
+        print(f"⚠️ LibreOffice conversion error (return code {result.returncode})")
+        # Try to validate DOCX file
+        try:
+            import zipfile
+            with zipfile.ZipFile(str(docx_path), 'r') as z:
+                print(f"   DOCX file is a valid ZIP (has {len(z.namelist())} files)")
+        except Exception as e:
+            print(f"   ⚠️ DOCX file validation failed: {e}")
+        raise RuntimeError(f"LibreOffice failed to convert DOCX (return code {result.returncode})")
+    
+    # Wait a moment for file system to sync
+    import time
+    time.sleep(0.5)
     
     if not out_pdf.exists():
         # Check if PDF was created with different name (LibreOffice sometimes changes names)
@@ -199,6 +214,13 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
             out_pdf = pdf_files[0]
             print(f"⚠️ PDF found with different name: {out_pdf}")
         else:
+            # List all PDFs in output dir for debugging
+            all_pdfs = list(output_dir.glob("*.pdf"))
+            print(f"⚠️ Expected PDF not found: {out_pdf}")
+            if all_pdfs:
+                print(f"   Found PDFs in directory: {[str(p.name) for p in all_pdfs]}")
+            else:
+                print(f"   No PDFs found in directory: {output_dir}")
             raise FileNotFoundError(f"Expected PDF not found after conversion: {out_pdf}")
     
     print(f"PDF ready at: {out_pdf}")
@@ -272,16 +294,26 @@ def main():
 
         embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
         
-        # Embed active beacon trigger in DOCX (invisible hyperlink)
+        # Embed active beacon trigger in DOCX (remote image)
+        # Note: This modifies the DOCX structure, so we'll convert to PDF first, then embed in PDF
+        docx_before_beacon = embedded_docx
         try:
             embedded_docx = embed_beacon_in_docx(embedded_docx, beacon_url, embedded_docx)
+            print(f"✅ Active beacon embedded in DOCX")
         except Exception as e:
             print(f"⚠️ Warning: Could not embed active beacon in DOCX: {e}")
+            print(f"   Using DOCX without active trigger (metadata only)")
+            embedded_docx = docx_before_beacon
         
         embedded_docs.append(embedded_docx)
 
-        # Convert to PDF for Linux compatibility/consumers
-        embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
+        # Convert to PDF - try with beacon-embedded DOCX first, fallback to metadata-only
+        try:
+            embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
+        except Exception as e:
+            print(f"⚠️ PDF conversion failed, trying with metadata-only DOCX...")
+            # Fallback: convert the DOCX before beacon embedding (just metadata)
+            embedded_pdf = convert_docx_to_pdf(docx_before_beacon, output_dir)
         
         # Embed active beacon trigger in PDF (invisible link annotation)
         try:
