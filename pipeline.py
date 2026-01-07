@@ -184,17 +184,24 @@ def main():
     ensure_dir(OUT_DIR)
     init_db()
 
-    # Step 1: Generate 5 documents, one per template
+    # Step 1: Generate 5 documents, one per template (unless we already have enough)
     templates = list(TEMPLATE_TO_FOLDER.keys())
-    print(f"\n[1/5] Generating {len(templates)} documents with one per template...")
-    failed_templates = []
-    for template in templates:
-        ok = generate_doc_with_retry(template)
-        if not ok:
-            failed_templates.append(template)
-    if failed_templates:
-        raise ValueError(f"Document generation failed for templates: {failed_templates}. Check model/API availability and retry.")
-    print("Document generation complete.")
+    existing_docx = list(GENERATED_DIR.glob("*.docx"))
+    if len(existing_docx) >= len(templates):
+        print(f"\n[1/5] Found {len(existing_docx)} existing DOCX in {GENERATED_DIR}, skipping generation and reusing them.")
+    else:
+        print(f"\n[1/5] Generating {len(templates)} documents with one per template...")
+        failed_templates = []
+        for template in templates:
+            ok = generate_doc_with_retry(template)
+            if not ok:
+                failed_templates.append(template)
+        if failed_templates:
+            raise ValueError(
+                f"Document generation failed for templates: {failed_templates}. "
+                "Check model/API availability and retry."
+            )
+        print("Document generation complete.")
 
     # Step 2: Find the 5 generated docs
     docx_files = list(GENERATED_DIR.glob("*.docx"))
