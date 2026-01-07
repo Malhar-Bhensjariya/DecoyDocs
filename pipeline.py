@@ -160,15 +160,61 @@ def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str, output
     return output_path
 
 
+def validate_docx_with_libreoffice(docx_path: Path) -> bool:
+    """
+    Validate DOCX can be opened by LibreOffice.
+    Returns True if valid, False otherwise.
+    """
+    libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
+    cmd = [
+        libreoffice_bin,
+        "--headless",
+        "--nologo",
+        "--nodefault",
+        "--invisible",
+        "--nolockcheck",
+        str(docx_path),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=False)
+    return result.returncode == 0
+
+
 def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
-    """Convert a DOCX to PDF via headless LibreOffice for cross-platform compatibility."""
+    """
+    Convert DOCX to PDF via headless LibreOffice.
+    
+    CRITICAL: This must be called on a CLEAN DOCX (metadata-only).
+    Do NOT call this on a DOCX that has been structurally modified
+    (e.g., with remote images), as LibreOffice may fail to load it.
+    
+    Args:
+        docx_path: Path to clean DOCX file (metadata-only)
+        output_dir: Output directory for PDF
+    
+    Returns:
+        Path to created PDF
+    
+    Raises:
+        RuntimeError: If LibreOffice conversion fails
+        FileNotFoundError: If PDF is not created
+    """
     ensure_dir(output_dir)
     libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
     out_pdf = output_dir / f"{docx_path.stem}.pdf"
     
-    # Verify DOCX exists and is readable
     if not docx_path.exists():
         raise FileNotFoundError(f"Source DOCX not found: {docx_path}")
+    
+    # Validate DOCX is a valid ZIP
+    try:
+        import zipfile
+        with zipfile.ZipFile(str(docx_path), 'r') as z:
+            required = ['word/document.xml', '[Content_Types].xml']
+            missing = [f for f in required if f not in z.namelist()]
+            if missing:
+                raise ValueError(f"DOCX missing required files: {missing}")
+    except Exception as e:
+        raise RuntimeError(f"DOCX file is invalid/corrupted: {e}")
     
     cmd = [
         libreoffice_bin,
@@ -181,49 +227,32 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
         str(output_dir),
         str(docx_path),
     ]
-    print(f"Converting DOCX to PDF: {' '.join(cmd)}")
+    print(f"Converting DOCX to PDF: {docx_path.name}")
     
-    # Run with error capture
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     
-    # Always show output for debugging
-    if result.stdout:
-        print(f"LibreOffice stdout: {result.stdout}")
-    if result.stderr:
-        print(f"LibreOffice stderr: {result.stderr}")
-    
     if result.returncode != 0:
-        print(f"⚠️ LibreOffice conversion error (return code {result.returncode})")
-        # Try to validate DOCX file
-        try:
-            import zipfile
-            with zipfile.ZipFile(str(docx_path), 'r') as z:
-                print(f"   DOCX file is a valid ZIP (has {len(z.namelist())} files)")
-        except Exception as e:
-            print(f"   ⚠️ DOCX file validation failed: {e}")
-        raise RuntimeError(f"LibreOffice failed to convert DOCX (return code {result.returncode})")
+        print(f"❌ LibreOffice conversion failed (return code {result.returncode})")
+        if result.stderr:
+            print(f"   stderr: {result.stderr[:500]}")
+        if result.stdout:
+            print(f"   stdout: {result.stdout[:500]}")
+        raise RuntimeError(f"LibreOffice failed to convert DOCX: {result.stderr or 'Unknown error'}")
     
-    # Wait a moment for file system to sync
+    # Wait for file system sync
     import time
     time.sleep(0.5)
     
     if not out_pdf.exists():
-        # Check if PDF was created with different name (LibreOffice sometimes changes names)
+        # Check for PDF with different name
         pdf_files = list(output_dir.glob(f"{docx_path.stem}*.pdf"))
         if pdf_files:
             out_pdf = pdf_files[0]
-            print(f"⚠️ PDF found with different name: {out_pdf}")
+            print(f"   PDF created as: {out_pdf.name}")
         else:
-            # List all PDFs in output dir for debugging
-            all_pdfs = list(output_dir.glob("*.pdf"))
-            print(f"⚠️ Expected PDF not found: {out_pdf}")
-            if all_pdfs:
-                print(f"   Found PDFs in directory: {[str(p.name) for p in all_pdfs]}")
-            else:
-                print(f"   No PDFs found in directory: {output_dir}")
-            raise FileNotFoundError(f"Expected PDF not found after conversion: {out_pdf}")
+            raise FileNotFoundError(f"PDF not created: {out_pdf}")
     
-    print(f"PDF ready at: {out_pdf}")
+    print(f"   PDF ready: {out_pdf.name}")
     return out_pdf
 
 
@@ -292,38 +321,38 @@ def main():
         beacon_url = build_beacon_url(u)  # Uses API_BASE_URL from env or default
         print(f"Beacon URL: {beacon_url}")
 
+        # Step 1: Embed metadata only (safe, uses python-docx)
         embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
-        
-        # Embed active beacon trigger in DOCX (remote image)
-        # Note: This modifies the DOCX structure, so we'll convert to PDF first, then embed in PDF
-        docx_before_beacon = embedded_docx
-        try:
-            embedded_docx = embed_beacon_in_docx(embedded_docx, beacon_url, embedded_docx)
-            print(f"✅ Active beacon embedded in DOCX")
-        except Exception as e:
-            print(f"⚠️ Warning: Could not embed active beacon in DOCX: {e}")
-            print(f"   Using DOCX without active trigger (metadata only)")
-            embedded_docx = docx_before_beacon
-        
         embedded_docs.append(embedded_docx)
 
-        # Convert to PDF - try with beacon-embedded DOCX first, fallback to metadata-only
-        try:
-            embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
-        except Exception as e:
-            print(f"⚠️ PDF conversion failed, trying with metadata-only DOCX...")
-            # Fallback: convert the DOCX before beacon embedding (just metadata)
-            embedded_pdf = convert_docx_to_pdf(docx_before_beacon, output_dir)
+        # Step 2: Convert CLEAN DOCX to PDF (before structural modifications)
+        # This ensures LibreOffice can always convert the file
+        embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
+        pdf_docs.append(embedded_pdf)
         
-        # Embed active beacon trigger in PDF (invisible link annotation)
+        # Step 3: Embed active beacon in DOCX (after PDF conversion)
+        # If this fails, we still have a valid DOCX and PDF
+        try:
+            embedded_docx = embed_beacon_in_docx(embedded_docx, beacon_url, embedded_docx)
+            # Update the stored path
+            embedded_docs[-1] = embedded_docx
+            print(f"✅ Active beacon embedded in DOCX (remote image)")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not embed active beacon in DOCX: {e}")
+            print(f"   DOCX has metadata only (no auto-trigger)")
+        
+        # Step 4: Embed active beacon in PDF (invisible link + JavaScript)
+        # NOTE: PDF JavaScript does NOT auto-execute in Evince (Linux Document Viewer)
+        # The invisible link annotation is best-effort and may require user interaction
+        # DOCX remote image is the primary auto-trigger method
         try:
             embedded_pdf = embed_beacon_in_pdf(embedded_pdf, beacon_url, embedded_pdf)
-            print(f"✅ Active beacon trigger embedded in PDF")
+            print(f"✅ PDF beacon embedded (link annotation + JS - best-effort only)")
+            # Update the stored path
+            pdf_docs[-1] = embedded_pdf
         except Exception as e:
             print(f"⚠️ Warning: Could not embed active beacon in PDF: {e}")
-            print(f"   PDF created but beacon may not auto-trigger. Error: {e}")
-        
-        pdf_docs.append(embedded_pdf)
+            print(f"   PDF created without beacon trigger")
 
     # TODO: Implement conditional beacon triggering in pipeline.
     # Future enhancement: Add checks before embedding beacons, e.g., based on document template,
