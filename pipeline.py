@@ -9,6 +9,7 @@ import subprocess
 import os
 import json
 import sys
+import time
 from pathlib import Path
 from embedder.utils import gen_uuid, ensure_dir
 from embedder.uuid_manager import init_db, reserve_uuid, mark_deployed
@@ -117,6 +118,32 @@ def extract_avoid_from_text(text: str):
     return topics, terms
 
 
+def generate_doc_with_retry(template: str, attempts: int = 3, base_delay: int = 8) -> bool:
+    """
+    Run llm-docgen for a template with basic retry/backoff to tolerate transient model outages.
+    Returns True on success, False after exhausting retries.
+    """
+    for attempt in range(1, attempts + 1):
+        print(f"Generating document for template: {template} (attempt {attempt}/{attempts})")
+        try:
+            subprocess.run(
+                ["python3", "llm-docgen/generate_docs.py", "--count", "1", "--template", template],
+                check=True,
+            )
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Generation failed (exit {e.returncode}) for template {template}: {e}")
+        except Exception as e:  # noqa: BLE001
+            print(f"⚠️ Generation exception for template {template}: {e}")
+
+        if attempt < attempts:
+            delay = base_delay * attempt
+            print(f"Retrying in {delay} seconds...")
+            time.sleep(delay)
+    print(f"❌ Giving up on template: {template} after {attempts} attempts.")
+    return False
+
+
 def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str, output_path: Path) -> Path:
     """Embed UUID and beacon URL into DOCX metadata."""
     ensure_dir(output_path.parent)
@@ -160,12 +187,13 @@ def main():
     # Step 1: Generate 5 documents, one per template
     templates = list(TEMPLATE_TO_FOLDER.keys())
     print(f"\n[1/5] Generating {len(templates)} documents with one per template...")
+    failed_templates = []
     for template in templates:
-        print(f"Generating document for template: {template}")
-        subprocess.run(
-            ["python3", "llm-docgen/generate_docs.py", "--count", "1", "--template", template],
-            check=True,
-        )
+        ok = generate_doc_with_retry(template)
+        if not ok:
+            failed_templates.append(template)
+    if failed_templates:
+        raise ValueError(f"Document generation failed for templates: {failed_templates}. Check model/API availability and retry.")
     print("Document generation complete.")
 
     # Step 2: Find the 5 generated docs
