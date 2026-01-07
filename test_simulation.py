@@ -10,15 +10,20 @@ import os
 import time
 import json
 from pathlib import Path
+
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from embedder.metadata import read_docx_custom_property
+
 # Configuration
 OUT_DIR = Path("out")
 SIMULATION_LOG = "simulation_log.json"
+BEACON_BASE = "https://fyp-backend-98o5.onrender.com/api/beacon"
 
 def setup_headless_browser():
     """Set up Selenium with headless Chrome for simulating document opens."""
@@ -33,7 +38,12 @@ def setup_headless_browser():
     return webdriver.Chrome(options=options)
 
 def simulate_open_pdf(driver, pdf_path: Path):
-    """Simulate opening a PDF by loading it in browser, allowing image/beacon fetches."""
+    """Simulate opening a PDF by loading it in browser, allowing image/beacon fetches.
+
+    NOTE: Our current PDFs (built via wkhtmltopdf) embed the beacon as an <img src="BEACON_URL" ...>,
+    so simply loading the PDF file may or may not execute that HTML depending on the viewer.
+    To remove ambiguity, we also parse and fire the beacon explicitly via HTTP (see below).
+    """
     file_url = f"file://{pdf_path.resolve()}"
     print(f"Simulating PDF open: {pdf_path.name}")
     driver.get(file_url)
@@ -49,16 +59,52 @@ def simulate_open_pdf(driver, pdf_path: Path):
         print(f"⚠️  Simulation issue for {pdf_path.name}: {e}")
 
 def simulate_open_docx(driver, docx_path: Path):
-    """Simulate opening DOCX (limited, as beacons are in metadata, not active links)."""
-    # DOCX beacons are in custom properties, not fetched on open.
-    # For realism, we could convert to PDF first or just log metadata extraction.
-    print(f"Simulating DOCX access: {docx_path.name} (metadata check only)")
-    # Extract and log metadata (beacons don't auto-fire in DOCX)
-    from embedder.metadata import read_docx_custom_property
+    """Simulate 'opening' DOCX by verifying embedded metadata and explicitly firing beacon.
+
+    DOCX core properties are not active content, so they won't auto-call the beacon on open.
+    For end-to-end testing we read the UUID/BeaconURL and hit the beacon API directly.
+    """
+    print(f"Simulating DOCX access: {docx_path.name}")
     uuid = read_docx_custom_property(str(docx_path), "HoneyUUID")
     beacon = read_docx_custom_property(str(docx_path), "BeaconURL")
-    print(f"  Extracted UUID: {uuid}, Beacon: {beacon}")
-    # Note: Real DOCX open in LibreOffice might not fetch beacons unless linked.
+
+    print(f"  Extracted UUID: {uuid}")
+    print(f"  Extracted Beacon URL: {beacon}")
+
+    if beacon:
+        try:
+            r = requests.get(beacon, timeout=5)
+            print(f"  ▶ Beacon GET status={r.status_code}, body={r.text[:200]}")
+        except Exception as e:
+            print(f"  ⚠️ Error firing DOCX beacon: {e}")
+    else:
+        print("  ⚠️ No BeaconURL metadata found on DOCX.")
+
+
+def fire_explicit_beacon_from_summary(summary_path: Path):
+    """Read summary_*.json and explicitly call the beacon for that UUID.
+
+    This isolates 'does the backend log /api/beacon hits?' from any viewer behavior.
+    """
+    try:
+        with open(summary_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"  ⚠️ Could not read summary {summary_path}: {e}")
+        return
+
+    uuid = data.get("uuid")
+    if not uuid:
+        print(f"  ⚠️ No uuid in summary {summary_path}")
+        return
+
+    beacon_url = f"{BEACON_BASE}?resource_id={uuid}&nonce=testsim"
+    print(f"  Firing explicit beacon for UUID={uuid} -> {beacon_url}")
+    try:
+        r = requests.get(beacon_url, timeout=5)
+        print(f"  ▶ Explicit beacon status={r.status_code}, body={r.text[:200]}")
+    except Exception as e:
+        print(f"  ⚠️ Error firing explicit beacon: {e}")
 
 def run_simulation():
     """Run simulation on all honeytokens in out/ subfolders."""
@@ -70,6 +116,10 @@ def run_simulation():
         for folder in OUT_DIR.iterdir():
             if folder.is_dir():
                 print(f"\n📁 Simulating access in folder: {folder.name}")
+                # Fire one explicit beacon based on summary JSON (if present)
+                for summary in folder.glob("summary_*.json"):
+                    fire_explicit_beacon_from_summary(summary)
+
                 for file_path in folder.glob("*"):
                     if file_path.suffix == ".pdf":
                         simulate_open_pdf(driver, file_path)
@@ -77,7 +127,7 @@ def run_simulation():
                             "file": str(file_path),
                             "type": "pdf",
                             "simulated_at": time.time(),
-                            "status": "beacon_triggered"
+                            "status": "pdf_opened"
                         })
                     elif file_path.suffix == ".docx":
                         simulate_open_docx(driver, file_path)
