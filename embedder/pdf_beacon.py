@@ -227,16 +227,67 @@ def embed_beacon_in_docx(docx_path: Path, beacon_url: str, output_path: Optional
             extent.set('cy', '1')  # 1 pixel tall
             inline.append(extent)
             
+            effect_extent = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}effectExtent')
+            effect_extent.set('l', '0')
+            effect_extent.set('t', '0')
+            effect_extent.set('r', '0')
+            effect_extent.set('b', '0')
+            inline.append(effect_extent)
+            
+            doc_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}docPr')
+            doc_pr.set('id', '1')
+            doc_pr.set('name', 'beacon')
+            inline.append(doc_pr)
+            
+            c_nv_graphic_frame_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}cNvGraphicFramePr')
+            inline.append(c_nv_graphic_frame_pr)
+            
             graphic = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}graphic')
             graphic_data = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}graphicData')
             graphic_data.set('uri', 'http://schemas.openxmlformats.org/drawingml/2006/picture')
             
             pic = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/picture}pic')
+            
+            # Required: nvPicPr (non-visual picture properties)
+            nv_pic_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/picture}nvPicPr')
+            c_nv_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/picture}cNvPr')
+            c_nv_pr.set('id', '0')
+            c_nv_pr.set('name', 'beacon')
+            nv_pic_pr.append(c_nv_pr)
+            c_nv_pic_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/picture}cNvPicPr')
+            nv_pic_pr.append(c_nv_pic_pr)
+            pic.append(nv_pic_pr)
+            
+            # Required: blipFill (image fill)
             blip_fill = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/picture}blipFill')
             blip = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
             blip.set('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}link', 'rIdBeacon')
             blip_fill.append(blip)
+            stretch = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}stretch')
+            fill_rect = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}fillRect')
+            stretch.append(fill_rect)
+            blip_fill.append(stretch)
             pic.append(blip_fill)
+            
+            # Required: spPr (shape properties)
+            sp_pr = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}spPr')
+            xfrm = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}xfrm')
+            off = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}off')
+            off.set('x', '0')
+            off.set('y', '0')
+            xfrm.append(off)
+            ext = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}ext')
+            ext.set('cx', '1')
+            ext.set('cy', '1')
+            xfrm.append(ext)
+            sp_pr.append(xfrm)
+            prst_geom = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}prstGeom')
+            prst_geom.set('prst', 'rect')
+            av_lst = ET.Element('{http://schemas.openxmlformats.org/drawingml/2006/main}avLst')
+            prst_geom.append(av_lst)
+            sp_pr.append(prst_geom)
+            pic.append(sp_pr)
+            
             graphic_data.append(pic)
             graphic.append(graphic_data)
             inline.append(graphic)
@@ -271,5 +322,18 @@ def embed_beacon_in_docx(docx_path: Path, beacon_url: str, output_path: Optional
     # Replace original with modified
     shutil.move(tmp_path, output_path_str)
     
-    print(f"✅ Remote image beacon embedded in DOCX (auto-triggers on open!)")
+    # Validate the DOCX is still a valid ZIP file
+    try:
+        with zipfile.ZipFile(output_path_str, 'r') as test_zip:
+            # Check that required files exist
+            required_files = ['word/document.xml', '[Content_Types].xml']
+            for req_file in required_files:
+                if req_file not in test_zip.namelist():
+                    raise ValueError(f"Required file missing in DOCX: {req_file}")
+        print(f"✅ Remote image beacon embedded in DOCX (auto-triggers on open!)")
+    except Exception as e:
+        print(f"⚠️ Warning: DOCX validation failed: {e}")
+        print(f"   File may be corrupted. Original file preserved.")
+        raise
+    
     return output_path

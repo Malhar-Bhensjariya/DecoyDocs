@@ -165,6 +165,11 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
     ensure_dir(output_dir)
     libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
     out_pdf = output_dir / f"{docx_path.stem}.pdf"
+    
+    # Verify DOCX exists and is readable
+    if not docx_path.exists():
+        raise FileNotFoundError(f"Source DOCX not found: {docx_path}")
+    
     cmd = [
         libreoffice_bin,
         "--headless",
@@ -177,9 +182,25 @@ def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
         str(docx_path),
     ]
     print(f"Converting DOCX to PDF: {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
+    
+    # Run with error capture
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    
+    if result.returncode != 0:
+        print(f"⚠️ LibreOffice conversion error (return code {result.returncode}):")
+        print(f"   stdout: {result.stdout}")
+        print(f"   stderr: {result.stderr}")
+        raise RuntimeError(f"LibreOffice failed to convert DOCX: {result.stderr}")
+    
     if not out_pdf.exists():
-        raise FileNotFoundError(f"Expected PDF not found after conversion: {out_pdf}")
+        # Check if PDF was created with different name (LibreOffice sometimes changes names)
+        pdf_files = list(output_dir.glob(f"{docx_path.stem}*.pdf"))
+        if pdf_files:
+            out_pdf = pdf_files[0]
+            print(f"⚠️ PDF found with different name: {out_pdf}")
+        else:
+            raise FileNotFoundError(f"Expected PDF not found after conversion: {out_pdf}")
+    
     print(f"PDF ready at: {out_pdf}")
     return out_pdf
 
