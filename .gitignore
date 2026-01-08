@@ -10,6 +10,10 @@ llm-docgen/.env
 venv
 
 honeypot-server/
+generated_docs/
+out/
+embedder_uuid.db
+test_server/test_honeypot.db
 __pycache__/
 *.pyc
 .ipynb_checkpoints
