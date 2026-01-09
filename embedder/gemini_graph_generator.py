@@ -18,9 +18,19 @@ from google import genai
 # Load Gemini API key
 def load_api_key() -> Optional[str]:
     """Load GEMINI_API_KEY from environment or .env file."""
-    dotenv_path = Path(__file__).resolve().parent / ".env"
-    if dotenv_path.exists():
-        load_dotenv(dotenv_path)
+    # Look for .env in project root first
+    project_root = Path(__file__).resolve().parent.parent
+    dotenv_paths = [
+        project_root / ".env",                    # Project root
+        project_root / "llm-docgen" / ".env",     # llm-docgen directory
+        Path(__file__).resolve().parent / ".env"  # embedder directory (fallback)
+    ]
+
+    for dotenv_path in dotenv_paths:
+        if dotenv_path.exists():
+            load_dotenv(dotenv_path)
+            break
+
     return os.getenv("GEMINI_API_KEY")
 
 
