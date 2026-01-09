@@ -14,7 +14,7 @@ from pathlib import Path
 from embedder.utils import gen_uuid, ensure_dir
 from embedder.uuid_manager import init_db, reserve_uuid, mark_deployed
 from embedder.stego import lsb_embed
-from embedder.beacon import build_mixed_beacon_urls
+from embedder.beacon import build_mixed_beacon_urls, build_beacon_url
 from embedder.packer import build_pdf_with_assets
 try:
     from embedder.gemini_graph_generator import generate_graph_with_beacon

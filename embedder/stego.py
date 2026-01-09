@@ -3,25 +3,30 @@
 from PIL import Image
 from typing import Optional
 
-def lsb_embed(input_path: str, output_path: str, secret_text: str) -> None:
+def lsb_embed(input_path: str, output_path: str, secret_text: str) -> bool:
     """Embed secret text in image using LSB steganography."""
-    img = Image.open(input_path).convert("RGBA")
-    pixels = img.load()
-    data = ''.join(f"{ord(c):08b}" for c in secret_text) + "00000000"  # terminator
-    w, h = img.size
-    idx = 0
-    for y in range(h):
-        for x in range(w):
+    try:
+        img = Image.open(input_path).convert("RGBA")
+        pixels = img.load()
+        data = ''.join(f"{ord(c):08b}" for c in secret_text) + "00000000"  # terminator
+        w, h = img.size
+        idx = 0
+        for y in range(h):
+            for x in range(w):
+                if idx >= len(data):
+                    break
+                r, g, b, a = pixels[x, y]
+                if idx < len(data): r = (r & ~1) | int(data[idx]); idx += 1
+                if idx < len(data): g = (g & ~1) | int(data[idx]); idx += 1
+                if idx < len(data): b = (b & ~1) | int(data[idx]); idx += 1
+                pixels[x, y] = (r, g, b, a)
             if idx >= len(data):
                 break
-            r, g, b, a = pixels[x, y]
-            if idx < len(data): r = (r & ~1) | int(data[idx]); idx += 1
-            if idx < len(data): g = (g & ~1) | int(data[idx]); idx += 1
-            if idx < len(data): b = (b & ~1) | int(data[idx]); idx += 1
-            pixels[x, y] = (r, g, b, a)
-        if idx >= len(data):
-            break
-    img.save(output_path, "PNG")
+        img.save(output_path, "PNG")
+        return True
+    except Exception as e:
+        print(f"LSB embedding error: {e}")
+        return False
 
 def lsb_extract(stego_path: str) -> Optional[str]:
     """Extract hidden text from steganographic image."""
