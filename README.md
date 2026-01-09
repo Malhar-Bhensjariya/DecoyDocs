@@ -83,6 +83,57 @@ These features make DecoyDocs a sophisticated toolkit for blue teams, turning re
 
 ---
 
+## What's New (Version 2.0)
+
+### ✨ Major Updates
+
+**Gemini-Powered Graph Generation**
+- Automatically generates professional, context-aware matplotlib/seaborn graphs for each document
+- Graphs are unique per document based on content analysis
+- Includes graceful fallback if API unavailable (uses stego image instead)
+
+**Mixed Beacon Endpoint Strategy** 
+- Now uses 3 different beacon endpoints mixed together:
+  - `/api/beacon` — Direct API endpoint
+  - `/fonts/*.woff2` — Masquerades as web font loading (stealthy)
+  - `/assets/media/*` — Masquerades as CDN assets (very stealthy)
+- Each document embeds all 3 types in randomized order
+- Much harder to detect beacon traffic patterns
+
+**Intelligent Hidden Trigger Positioning**
+- Implements smart 6-zone placement algorithm
+- Hidden triggers guaranteed **zero overlap** with:
+  - Document header
+  - Graph image
+  - Content text
+  - Footer areas
+- Uses safe margin calculations for 100x100 clickable regions
+
+**Enhanced Test Simulation**
+- Improved `test_simulation.py` with:
+  - Proper error logging and error handling
+  - Graceful browser fallback (works even without Chrome)
+  - Processes all documents without hanging
+  - Detailed simulation report with beacon fire counts
+
+**Simplified API Integration**
+- New `embedder/pipeline_integration.py` module for easy honeydoc creation from document content
+- `create_honeydoc_from_content()` handles entire pipeline automatically
+- Suitable for integration into other systems
+
+### 🔒 Security Improvements
+
+- `/fonts/` endpoint: Beacon traffic looks identical to legitimate font requests
+- `/assets/media/` endpoint: Indistinguishable from CDN asset loading
+- Multiple trigger points per document (4-10+ beacon fires per access)
+- Per-document unique graphs reduce template pattern detection
+
+### 📚 For Complete Details
+
+See `GUIDE.md` for comprehensive documentation consolidating all updates, architecture diagrams, usage examples, and troubleshooting.
+
+---
+
 ## Honeypot Server
 
 The honeypot server is a Django-based web application that acts as a stealth document tracking system. It provides API endpoints that appear to be standard SaaS infrastructure (asset delivery, configuration, telemetry) but actually log and analyze document access events with comprehensive client fingerprinting.

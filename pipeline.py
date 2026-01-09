@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 pipeline.py
-Unified orchestrator: generates 3 unique docs via LLM, validates similarity, embeds UUID and beacon metadata into them,
-and saves honeydocs in /out.
+Unified orchestrator: generates 5 unique docs via LLM (one per template), validates similarity, embeds UUID and 
+mixed beacon metadata into them, and saves honeydocs in /out with Gemini-generated graphs.
 """
 
 import subprocess
@@ -15,7 +15,7 @@ from embedder.utils import gen_uuid, ensure_dir
 from embedder.uuid_manager import init_db, reserve_uuid, mark_deployed
 from embedder.metadata import write_docx_custom_property
 from embedder.exif_meta import write_png_text
-from embedder.beacon import build_beacon_url
+from embedder.beacon import build_beacon_url, build_mixed_beacon_urls
 from embedder.pdf_beacon import embed_beacon_in_pdf, embed_beacon_in_docx
 from similarity import check_similarity_threshold, compute_similarity_matrix
 import numpy as np
@@ -74,54 +74,6 @@ def read_doc_text(docx_path: Path) -> str:
     for para in doc.paragraphs:
         text += para.text + "\n"
     return text
-
-
-def generate_three_docs():
-    """Generate 3 documents with similarity enforcement."""
-    docs = []
-    avoid_topics_agg = []
-    avoid_terms_agg = []
-
-    for i in range(3):
-        print(f"\n[1.{i+1}/3] Generating Document {i+1}...")
-        if i == 0:
-            generate_single_doc()
-        else:
-            # For doc 2 and 3, use aggregated avoid lists
-            generate_single_doc(avoid_topics_agg, avoid_terms_agg)
-
-        latest_doc = get_latest_docx()
-        text = read_doc_text(latest_doc)
-
-        # Check similarity with previous docs
-        current_docs = docs + [(f"doc_{i}", text)]
-        if len(current_docs) > 1 and check_similarity_threshold(current_docs, SIMILARITY_THRESHOLD):
-            print(f"Document {i+1} too similar to previous. Regenerating...")
-            # Extract avoid from previous
-            prev_topics, prev_terms = extract_avoid_from_text(text)  # Need to implement
-            avoid_topics_agg.extend(prev_topics)
-            avoid_terms_agg.extend(prev_terms)
-            # Retry
-            generate_single_doc(avoid_topics_agg, avoid_terms_agg)
-            latest_doc = get_latest_docx()
-            text = read_doc_text(latest_doc)
-
-        docs.append((f"doc_{i}", text))
-        print(f"Document {i+1} accepted.")
-
-    return docs
-
-
-def extract_avoid_from_text(text: str):
-    """Extract topics and terms from text."""
-    # Simple implementation
-    lines = text.split('\n')
-    topics = [line.strip() for line in lines if line.isupper() or line.startswith('**')]
-    terms = []
-    for line in lines:
-        words = [w for w in line.split() if len(w) > 4]
-        terms.extend(words)
-    return topics, terms
 
 
 def generate_doc_with_retry(template: str, attempts: int = 3, base_delay: int = 8) -> bool:
@@ -387,7 +339,8 @@ def main():
             "uuid": u,
             "docx": str(embedded_doc),
             "pdf": str(pdf_docs[i]),
-            "beacon_url": build_beacon_url(u),  # Uses API_BASE_URL from env or default
+            "beacon_urls": build_mixed_beacon_urls(u),  # All 3 endpoint types
+            "beacon_url": build_beacon_url(u),  # Legacy, for backward compatibility
             "manifest": str(manifest),
             "template": template,
             "folder": folder

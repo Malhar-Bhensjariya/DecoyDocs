@@ -21,3 +21,6 @@ __pycache__/
 .idea/
 .vscode/
 REPORT.md
+GUIDE.md
+QUICK_REFERENCE.md
+STATUS_REPORT.md

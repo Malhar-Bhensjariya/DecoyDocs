@@ -4,6 +4,7 @@ from PIL import Image
 from typing import Optional
 
 def lsb_embed(input_path: str, output_path: str, secret_text: str) -> None:
+    """Embed secret text in image using LSB steganography."""
     img = Image.open(input_path).convert("RGBA")
     pixels = img.load()
     data = ''.join(f"{ord(c):08b}" for c in secret_text) + "00000000"  # terminator
@@ -23,6 +24,7 @@ def lsb_embed(input_path: str, output_path: str, secret_text: str) -> None:
     img.save(output_path, "PNG")
 
 def lsb_extract(stego_path: str) -> Optional[str]:
+    """Extract hidden text from steganographic image."""
     img = Image.open(stego_path).convert("RGBA")
     pixels = img.load()
     w, h = img.size
@@ -43,3 +45,22 @@ def lsb_extract(stego_path: str) -> Optional[str]:
             break
         chars.append(chr(val))
     return ''.join(chars) if chars else None
+
+def create_clickable_stego_html(stego_image_path: str, beacon_url: str, alt_text: str = "Document") -> str:
+    """
+    Create HTML for clickable steganographic image that triggers beacon.
+    
+    Args:
+        stego_image_path: path to steganographic image
+        beacon_url: beacon URL to trigger on click
+        alt_text: alt text for accessibility
+    
+    Returns:
+        HTML string with clickable image
+    """
+    html = f'''<img src="{stego_image_path}"
+     alt="{alt_text}"
+     style="cursor: pointer; max-width: 100%; display: block; margin: 15px 0;"
+     onclick="fetch('{beacon_url}', {{mode: 'no-cors'}}).catch(e => {{}});"
+     title="Click to view full document" />'''
+    return html
