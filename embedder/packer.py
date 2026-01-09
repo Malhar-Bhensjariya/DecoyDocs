@@ -240,7 +240,7 @@ def build_pdf_with_assets(title: str, stego_path: str, beacon_urls: Dict[str, st
         f.write(html)
 
     try:
-        subprocess.run(["wkhtmltopdf", tmp_html, out_path], check=True, 
+        subprocess.run(["wkhtmltopdf", "--enable-local-file-access", tmp_html, out_path], check=True, 
                       capture_output=True)
     except subprocess.CalledProcessError as e:
         print(f"wkhtmltopdf error: {e.stderr.decode()}")
