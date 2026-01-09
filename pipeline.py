@@ -193,6 +193,9 @@ def main():
         # Define base image for fallback
         base_image = Path("assets/base.png")
 
+        # Ensure output directory exists
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         # Generate professional graph with Gemini (optional) - FIRST
         graph_out = output_dir / f"graph_{u}.png"
         graph_success = False
