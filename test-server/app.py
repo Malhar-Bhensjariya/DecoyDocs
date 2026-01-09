@@ -56,7 +56,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print(f"✅ Database initialized at {DB_PATH}")
+    print(f"Database initialized at {DB_PATH}")
 
 
 @app.route("/api/documents/create", methods=["POST"])
@@ -97,9 +97,9 @@ def create_documents():
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (uuid_val, name, file_path, pdf_path, created_at, metadata))
                 registered.append(uuid_val)
-                print(f"📄 Registered document: {uuid_val} -> {name}")
+                print(f"Registered document: {uuid_val} -> {name}")
             except sqlite3.Error as e:
-                print(f"⚠️ Error registering {uuid_val}: {e}")
+                print(f"Error registering {uuid_val}: {e}")
 
         conn.commit()
         conn.close()
@@ -111,7 +111,7 @@ def create_documents():
         }), 200
 
     except Exception as e:
-        print(f"❌ Error in /api/documents/create: {e}")
+        print(f"Error in /api/documents/create: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -169,7 +169,7 @@ def beacon():
         return jsonify({"status": "ok"}), 200
 
     except Exception as e:
-        print(f"❌ Error in /api/beacon: {e}")
+        print(f"Error in /api/beacon: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("🚀 TEST SERVER STARTING")
     print("="*60)
-    print(f"📊 Database: {DB_PATH}")
+    print(f"Database: {DB_PATH}")
     print("📡 Endpoints:")
     print("   POST /api/documents/create - Register documents")
     print("   GET  /api/beacon?resource_id=<uuid> - Trigger beacon")

@@ -13,11 +13,25 @@ import time
 from pathlib import Path
 from embedder.utils import gen_uuid, ensure_dir
 from embedder.uuid_manager import init_db, reserve_uuid, mark_deployed
-from embedder.metadata import write_docx_custom_property
-from embedder.exif_meta import write_png_text
-from embedder.beacon import build_beacon_url, build_mixed_beacon_urls
-from embedder.pdf_beacon import embed_beacon_in_pdf, embed_beacon_in_docx
-from similarity import check_similarity_threshold, compute_similarity_matrix
+from embedder.stego import lsb_embed
+from embedder.beacon import build_mixed_beacon_urls
+from embedder.packer import build_pdf_with_assets
+try:
+    from embedder.gemini_graph_generator import generate_graph_with_beacon
+    GEMINI_AVAILABLE = True
+except ImportError:
+    print("Gemini not available, graphs will be skipped")
+    GEMINI_AVAILABLE = False
+    generate_graph_with_beacon = None
+from PIL import PngImagePlugin, Image
+try:
+    from similarity import check_similarity_threshold, compute_similarity_matrix
+    SIMILARITY_AVAILABLE = True
+except ImportError:
+    print("Similarity checking not available, will skip uniqueness validation")
+    SIMILARITY_AVAILABLE = False
+    check_similarity_threshold = lambda docs, threshold: False
+    compute_similarity_matrix = lambda docs: [[0.0] * len(docs)] * len(docs)
 import numpy as np
 import requests
 from datetime import datetime
@@ -90,122 +104,16 @@ def generate_doc_with_retry(template: str, attempts: int = 3, base_delay: int = 
             )
             return True
         except subprocess.CalledProcessError as e:
-            print(f"⚠️ Generation failed (exit {e.returncode}) for template {template}: {e}")
+            print(f"Generation failed (exit {e.returncode}) for template {template}: {e}")
         except Exception as e:  # noqa: BLE001
-            print(f"⚠️ Generation exception for template {template}: {e}")
+            print(f"Generation exception for template {template}: {e}")
 
         if attempt < attempts:
             delay = base_delay * attempt
             print(f"Retrying in {delay} seconds...")
             time.sleep(delay)
-    print(f"❌ Giving up on template: {template} after {attempts} attempts.")
+    print(f"Giving up on template: {template} after {attempts} attempts.")
     return False
-
-
-def embed_metadata_into_docx(docx_path: Path, uuid: str, beacon_url: str, output_path: Path) -> Path:
-    """Embed UUID and beacon URL into DOCX metadata."""
-    ensure_dir(output_path.parent)
-    print(f"Embedding metadata into DOCX: {docx_path} -> {output_path}")
-    write_docx_custom_property(str(docx_path), str(output_path), "HoneyUUID", uuid)
-    write_docx_custom_property(str(output_path), str(output_path), "BeaconURL", beacon_url)
-    print("Metadata embedded successfully.")
-    return output_path
-
-
-def validate_docx_with_libreoffice(docx_path: Path) -> bool:
-    """
-    Validate DOCX can be opened by LibreOffice.
-    Returns True if valid, False otherwise.
-    """
-    libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
-    cmd = [
-        libreoffice_bin,
-        "--headless",
-        "--nologo",
-        "--nodefault",
-        "--invisible",
-        "--nolockcheck",
-        str(docx_path),
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=False)
-    return result.returncode == 0
-
-
-def convert_docx_to_pdf(docx_path: Path, output_dir: Path) -> Path:
-    """
-    Convert DOCX to PDF via headless LibreOffice.
-    
-    CRITICAL: This must be called on a CLEAN DOCX (metadata-only).
-    Do NOT call this on a DOCX that has been structurally modified
-    (e.g., with remote images), as LibreOffice may fail to load it.
-    
-    Args:
-        docx_path: Path to clean DOCX file (metadata-only)
-        output_dir: Output directory for PDF
-    
-    Returns:
-        Path to created PDF
-    
-    Raises:
-        RuntimeError: If LibreOffice conversion fails
-        FileNotFoundError: If PDF is not created
-    """
-    ensure_dir(output_dir)
-    libreoffice_bin = os.environ.get("LIBREOFFICE_BIN") or "libreoffice"
-    out_pdf = output_dir / f"{docx_path.stem}.pdf"
-    
-    if not docx_path.exists():
-        raise FileNotFoundError(f"Source DOCX not found: {docx_path}")
-    
-    # Validate DOCX is a valid ZIP
-    try:
-        import zipfile
-        with zipfile.ZipFile(str(docx_path), 'r') as z:
-            required = ['word/document.xml', '[Content_Types].xml']
-            missing = [f for f in required if f not in z.namelist()]
-            if missing:
-                raise ValueError(f"DOCX missing required files: {missing}")
-    except Exception as e:
-        raise RuntimeError(f"DOCX file is invalid/corrupted: {e}")
-    
-    cmd = [
-        libreoffice_bin,
-        "--headless",
-        "--nologo",
-        "--nofirststartwizard",
-        "--convert-to",
-        "pdf:writer_pdf_Export",
-        "--outdir",
-        str(output_dir),
-        str(docx_path),
-    ]
-    print(f"Converting DOCX to PDF: {docx_path.name}")
-    
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    
-    if result.returncode != 0:
-        print(f"❌ LibreOffice conversion failed (return code {result.returncode})")
-        if result.stderr:
-            print(f"   stderr: {result.stderr[:500]}")
-        if result.stdout:
-            print(f"   stdout: {result.stdout[:500]}")
-        raise RuntimeError(f"LibreOffice failed to convert DOCX: {result.stderr or 'Unknown error'}")
-    
-    # Wait for file system sync
-    import time
-    time.sleep(0.5)
-    
-    if not out_pdf.exists():
-        # Check for PDF with different name
-        pdf_files = list(output_dir.glob(f"{docx_path.stem}*.pdf"))
-        if pdf_files:
-            out_pdf = pdf_files[0]
-            print(f"   PDF created as: {out_pdf.name}")
-        else:
-            raise FileNotFoundError(f"PDF not created: {out_pdf}")
-    
-    print(f"   PDF ready: {out_pdf.name}")
-    return out_pdf
 
 
 def main():
@@ -246,16 +154,20 @@ def main():
     doc_tuples = list(zip(doc_labels, texts))
 
     # Compute similarity matrix
-    print("\n[2/5] Computing similarity matrix...")
-    sim_matrix = compute_similarity_matrix(doc_tuples)
-    print("Cosine Similarity Matrix:")
-    print(sim_matrix)
+    if SIMILARITY_AVAILABLE:
+        print("\n[2/5] Computing similarity matrix...")
+        sim_matrix = compute_similarity_matrix(doc_tuples)
+        print("Cosine Similarity Matrix:")
+        print(sim_matrix)
 
-    # Check global similarity
-    if check_similarity_threshold(doc_tuples, SIMILARITY_THRESHOLD):
-        print("Warning: Some documents have similarity >= threshold. Enforcement not fully implemented; proceeding.")
+        # Check global similarity
+        if check_similarity_threshold(doc_tuples, SIMILARITY_THRESHOLD):
+            print("Warning: Some documents have similarity >= threshold. Enforcement not fully implemented; proceeding.")
+    else:
+        print("\n[2/5] Skipping similarity check (sentence-transformers not available)")
+        sim_matrix = [[0.0] * len(doc_tuples)] * len(doc_tuples)
 
-    # Step 3: Embed metadata into each doc
+    # Step 3: Create honeydocs with all triggers (visible links, graph, hidden regions)
     uuids = []
     embedded_docs = []
     pdf_docs = []
@@ -263,66 +175,80 @@ def main():
         template = templates[i]
         folder = TEMPLATE_TO_FOLDER[template]
         output_dir = OUT_DIR / folder
-        print(f"\n[3.{i+1}/5] Embedding metadata for {docx_path.name} (template: {template}, folder: {folder})...")
+        print(f"\n[3.{i+1}/5] Creating honeydoc for {docx_path.name} (template: {template}, folder: {folder})...")
 
         u = gen_uuid()
         reserve_uuid(u, label=f"doc_{i+1}", template=template)
         uuids.append(u)
         print(f"Reserved UUID: {u}")
 
-        beacon_url = build_beacon_url(u)  # Uses API_BASE_URL from env or default
-        print(f"Beacon URL: {beacon_url}")
+        # Extract document text for graph generation
+        doc_text = read_doc_text(docx_path)
+        print(f"Extracted {len(doc_text)} characters of content")
 
-        # Step 1: Embed metadata only (safe, uses python-docx)
-        embedded_docx = embed_metadata_into_docx(docx_path, u, beacon_url, output_dir / f"{docx_path.stem}_embedded.docx")
-        embedded_docs.append(embedded_docx)
+        # Create beacon URLs for steganography data
+        beacon_urls = build_mixed_beacon_urls(u)
+        data = json.dumps({"uuid": u, "beacons": beacon_urls})
 
-        # Step 2: Convert CLEAN DOCX to PDF (before structural modifications)
-        # This ensures LibreOffice can always convert the file
-        embedded_pdf = convert_docx_to_pdf(embedded_docx, output_dir)
-        pdf_docs.append(embedded_pdf)
+        # Define base image for fallback
+        base_image = Path("assets/base.png")
+
+        # Generate professional graph with Gemini (optional) - FIRST
+        graph_out = output_dir / f"graph_{u}.png"
+        graph_success = False
+        if GEMINI_AVAILABLE:
+            print(f"Generating professional graph with Gemini...")
+            try:
+                success, graph_path = generate_graph_with_beacon(
+                    document_content=doc_text,
+                    output_path=str(graph_out),
+                    beacon_url=beacon_urls.get('assets', '')
+                )
+                if success:
+                    print(f"Graph generated: {graph_path}")
+                    graph_success = True
+                else:
+                    print(f"Graph generation failed, will use base image for stego")
+                    graph_out = None
+            except Exception as e:
+                print(f"Graph generation error: {e}, will use base image for stego")
+                graph_out = None
+        else:
+            print(f"Skipping graph generation (Gemini not available)")
+            graph_out = None
+
+        # Generate steganographic image (LSB embedded) - SECOND, using graph as base if available
+        stego_out = output_dir / f"stego_{u}.png"
+        base_for_stego = str(graph_out) if graph_success else str(base_image)
         
-        # Step 3: Embed active beacon in DOCX (after PDF conversion)
-        # If this fails, we still have a valid DOCX and PDF
-        try:
-            embedded_docx = embed_beacon_in_docx(embedded_docx, beacon_url, embedded_docx)
-            # Update the stored path
-            embedded_docs[-1] = embedded_docx
-            print(f"✅ Active beacon embedded in DOCX (remote image)")
-        except Exception as e:
-            print(f"⚠️ Warning: Could not embed active beacon in DOCX: {e}")
-            print(f"   DOCX has metadata only (no auto-trigger)")
-        
-        # Step 4: Embed active beacon in PDF (invisible link + JavaScript)
-        # NOTE: PDF JavaScript does NOT auto-execute in Evince (Linux Document Viewer)
-        # The invisible link annotation is best-effort and may require user interaction
-        # DOCX remote image is the primary auto-trigger method
-        try:
-            embedded_pdf = embed_beacon_in_pdf(embedded_pdf, beacon_url, embedded_pdf)
-            print(f"✅ PDF beacon embedded (link annotation + JS - best-effort only)")
-            # Update the stored path
-            pdf_docs[-1] = embedded_pdf
-        except Exception as e:
-            print(f"⚠️ Warning: Could not embed active beacon in PDF: {e}")
-            print(f"   PDF created without beacon trigger")
+        if os.path.exists(base_for_stego):
+            if lsb_embed(base_for_stego, str(stego_out), data):
+                print(f"Stego image created from {'graph' if graph_success else 'base image'}: {stego_out}")
+            else:
+                print(f"LSB embedding failed, using base image")
+                stego_out = Path(base_for_stego)
+        else:
+            print("No base image found for stego, stego will be None")
+            stego_out = None
 
-    # TODO: Implement conditional beacon triggering in pipeline.
-    # Future enhancement: Add checks before embedding beacons, e.g., based on document template,
-    # deployment context, or access history. For example, only embed active beacons for high-risk docs.
-    # This requires integration with a monitoring system to track opens.
-
-    # Step 4: Optional PNG
-    print("\n[4/5] Checking for base image...")
-    placeholder_image = Path("assets/base.png")
-    if placeholder_image.exists():
-        for i, u in enumerate(uuids):
-            template = templates[i]
-            folder = TEMPLATE_TO_FOLDER[template]
-            stego_out = OUT_DIR / folder / f"uuid_{u}.png"
-            write_png_text(str(placeholder_image), str(stego_out), "HoneyUUID", u)
-            print(f"UUID embedded into PNG: {stego_out}")
-    else:
-        print("No base image found. Skipping PNG embedding.")
+        # Build PDF with ALL triggers using new packer
+        print(f"Building PDF with all triggers...")
+        try:
+            out_pdf, manifest_path = build_pdf_with_assets(
+                title=f"{template.replace('_', ' ').title()} Report",
+                stego_path=str(stego_out) if stego_out else None,
+                beacon_urls=beacon_urls,
+                graph_path=str(graph_out) if graph_out else None,
+                out_name=f"{template}_{u}",
+                output_dir=str(output_dir)
+            )
+            pdf_docs.append(Path(out_pdf))
+            embedded_docs.append(docx_path)  # Keep original DOCX reference
+            print(f"Honeydoc created: {out_pdf}")
+            print(f"   Manifest: {manifest_path}")
+        except Exception as e:
+            print(f"Failed to create honeydoc: {e}")
+            raise
 
     # Step 5: Mark deployments
     print("\n[5/5] Marking deployments...")
@@ -362,11 +288,11 @@ def main():
     try:
         response = requests.post(DOCUMENTS_API_URL, json=documents_metadata)
         if response.status_code == 200:
-            print("✅ Metadata sent to honeypot server successfully.")
+            print("Metadata sent to honeypot server successfully.")
         else:
-            print(f"⚠️ Failed to send metadata: {response.status_code} - {response.text}")
+            print(f"Failed to send metadata: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"⚠️ Error sending metadata to server: {e}")
+        print(f"Error sending metadata to server: {e}")
 
     # Output
     print("\n=== PIPELINE COMPLETE ===")

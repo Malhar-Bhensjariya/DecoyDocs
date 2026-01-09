@@ -44,26 +44,16 @@ def main():
     
     reserve_uuid(u, label=args.label, template=args.title)
 
-    # Generate steganographic image (LSB embedded)
-    stego_out = os.path.join(doc_folder, f"stego_{u}.png")
+    # Create beacon URLs for steganography data
     beacon_urls = build_mixed_beacon_urls(u)
     data = json.dumps({"uuid": u, "beacons": beacon_urls})
-    
-    # Create a simple base stego image if not provided
-    base_image = cfg.get("default_stego_image", "assets/base.png")
-    if os.path.exists(base_image):
-        if cfg["embed"].get("use_lsb", True):
-            lsb_embed(base_image, stego_out, data)
-        if cfg["embed"].get("use_png_text", True):
-            write_png_text(stego_out, stego_out, "HoneyUUID", u)
-    else:
-        print(f"⚠️  Base stego image not found: {base_image}")
 
-    # Generate professional graph with Gemini (optional)
+    # Generate professional graph with Gemini (optional) - FIRST
     graph_out = None
+    graph_success = False
     if not args.skip_graph:
         graph_out = os.path.join(doc_folder, f"graph_{u}.png")
-        print(f"🤖 Generating professional graph with Gemini...")
+        print(f"Generating professional graph with Gemini...")
         try:
             success, graph_path = generate_graph_with_beacon(
                 document_content=args.doc_content,
@@ -71,16 +61,30 @@ def main():
                 beacon_url=beacon_urls.get('assets', '')
             )
             if success:
-                print(f"✅ Graph generated: {graph_path}")
+                print(f"Graph generated: {graph_path}")
+                graph_success = True
             else:
-                print(f"⚠️  Graph generation failed, using stego image only")
+                print(f"Graph generation failed, will use base image for stego")
                 graph_out = None
         except Exception as e:
-            print(f"⚠️  Graph generation error: {e}, using stego image only")
+            print(f"Graph generation error: {e}, will use base image for stego")
             graph_out = None
 
+    # Generate steganographic image (LSB embedded) - SECOND, using graph as base if available
+    stego_out = os.path.join(doc_folder, f"stego_{u}.png")
+    base_for_stego = graph_out if graph_success else cfg.get("default_stego_image", "assets/base.png")
+    
+    if os.path.exists(base_for_stego):
+        if cfg["embed"].get("use_lsb", True):
+            lsb_embed(base_for_stego, stego_out, data)
+        if cfg["embed"].get("use_png_text", True):
+            write_png_text(stego_out, stego_out, "HoneyUUID", u)
+        print(f"Stego image created from {'graph' if graph_success else 'base image'}: {stego_out}")
+    else:
+        print(f"Base stego image not found: {base_for_stego}")
+
     # Build PDF with all triggers
-    print(f"📄 Building PDF with beacons...")
+    print(f"Building PDF with beacons...")
     out_pdf, manifest_path = build_pdf_with_assets(
         args.title, 
         stego_out, 
@@ -92,7 +96,7 @@ def main():
     mark_deployed(u, manifest_path)
 
     print("\n" + "="*60)
-    print("✅ HONEYDOC GENERATION COMPLETE")
+    print("HONEYDOC GENERATION COMPLETE")
     print("="*60)
     print(f"UUID: {u}")
     print(f"PDF: {out_pdf}")
@@ -100,7 +104,7 @@ def main():
     print(f"Stego: {stego_out}")
     if graph_out:
         print(f"Graph: {graph_out}")
-    print(f"\n📊 Beacon URLs:")
+    print(f"\nBeacon URLs:")
     for endpoint, url in beacon_urls.items():
         print(f"  {endpoint}: {url}")
     print("="*60)

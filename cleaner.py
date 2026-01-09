@@ -47,7 +47,7 @@ def cleanup():
         else:
             print(f"File not found: {file_path}")
 
-    print("✅ Cleanup complete! You can now rerun pipeline.py from scratch.")
+    print("Cleanup complete! You can now rerun pipeline.py from scratch.")
 
 if __name__ == "__main__":
     # Simple confirmation

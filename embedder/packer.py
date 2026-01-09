@@ -83,8 +83,16 @@ def build_pdf_with_assets(title: str, stego_path: str, beacon_urls: Dict[str, st
 
     # Use graph image if available, otherwise use stego image
     main_image_path = graph_path if graph_path else stego_path
+    # Convert to relative path for wkhtmltopdf
+    if main_image_path:
+        try:
+            main_image_path = os.path.relpath(main_image_path, output_dir)
+        except ValueError:
+            # If relative path fails, use absolute path without file:// prefix
+            pass
+
     main_image_html = generate_image_trigger_html(
-        f"file://{os.path.abspath(main_image_path)}", 
+        main_image_path,
         beacon_urls.get('assets', ''),
         alt_text="Document Analysis"
     )

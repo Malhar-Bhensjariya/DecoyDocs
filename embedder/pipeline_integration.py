@@ -56,29 +56,9 @@ def create_honeydoc_from_content(
     # Generate beacon URLs
     beacon_urls = build_mixed_beacon_urls(u)
     
-    # Create stego image (with LSB embedding)
-    stego_path = os.path.join(doc_folder, f"stego_{u}.png")
-    data = json.dumps({"uuid": u, "beacons": beacon_urls})
-    
-    # Use base.png as stego base
-    base_image = "assets/base.png"
-    if os.path.exists(base_image):
-        try:
-            lsb_embed(base_image, stego_path, data)
-            img = Image.open(stego_path)
-            meta = PngImagePlugin.PngInfo()
-            meta.add_text("HoneyUUID", u)
-            img.save(stego_path, pnginfo=meta)
-        except Exception as e:
-            print(f"⚠️  Stego embedding error: {e}")
-            stego_path = base_image  # Fallback
-    else:
-        print(f"⚠️  Base image not found: {base_image}")
-        stego_path = None
-    
-    # Generate professional graph with Gemini
+    # Generate professional graph with Gemini FIRST
     graph_path = None
-    print(f"🤖 Generating professional graph...")
+    print(f"Generating professional graph...")
     try:
         graph_path = os.path.join(doc_folder, f"graph_{u}.png")
         success, graph_file = generate_graph_with_beacon(
@@ -88,17 +68,37 @@ def create_honeydoc_from_content(
             api_key=api_key
         )
         if success:
-            print(f"✅ Graph generated: {graph_file}")
+            print(f"Graph generated: {graph_file}")
         else:
-            print(f"⚠️  Graph generation failed, PDF will use stego only")
+            print(f"Graph generation failed, will use base.png for stego")
             graph_path = None
     except Exception as e:
-        print(f"⚠️  Graph generation error: {e}")
+        print(f"Graph generation error: {e}")
         graph_path = None
+    
+    # Create stego image (with LSB embedding) - use graph as base if available
+    stego_path = os.path.join(doc_folder, f"stego_{u}.png")
+    data = json.dumps({"uuid": u, "beacons": beacon_urls})
+    
+    # Use generated graph as stego base, fallback to base.png
+    base_for_stego = graph_path if graph_path else "assets/base.png"
+    if os.path.exists(base_for_stego):
+        try:
+            lsb_embed(base_for_stego, stego_path, data)
+            img = Image.open(stego_path)
+            meta = PngImagePlugin.PngInfo()
+            meta.add_text("HoneyUUID", u)
+            img.save(stego_path, pnginfo=meta)
+        except Exception as e:
+            print(f"Stego embedding error: {e}")
+            stego_path = base_for_stego  # Fallback
+    else:
+        print(f"Base image not found: {base_for_stego}")
+        stego_path = None
     
     # Build PDF with all triggers
     try:
-        print(f"📄 Building PDF with beacons...")
+        print(f"Building PDF with beacons...")
         pdf_path, manifest_path = build_pdf_with_assets(
             title=doc_title,
             stego_path=stego_path,
@@ -111,7 +111,7 @@ def create_honeydoc_from_content(
         mark_deployed(u, manifest_path)
         
         print("\n" + "="*60)
-        print(f"✅ HONEYDOC CREATED")
+        print(f"HONEYDOC CREATED")
         print("="*60)
         print(f"UUID: {u}")
         print(f"Title: {doc_title}")
@@ -119,7 +119,7 @@ def create_honeydoc_from_content(
         print(f"Manifest: {manifest_path}")
         if graph_path:
             print(f"Graph: {graph_path}")
-        print(f"\n📊 Beacon URLs:")
+        print(f"\nBeacon URLs:")
         for endpoint, url in beacon_urls.items():
             print(f"  {endpoint}: {url}")
         print("="*60 + "\n")
@@ -127,5 +127,5 @@ def create_honeydoc_from_content(
         return True, pdf_path
         
     except Exception as e:
-        print(f"❌ PDF generation failed: {e}")
+        print(f"PDF generation failed: {e}")
         return False, None

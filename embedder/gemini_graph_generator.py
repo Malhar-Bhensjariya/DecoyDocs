@@ -142,7 +142,7 @@ print(f'Graph saved to {{r"{output_path}"}}')
             print(f"Error executing graph code: {result.stderr}")
             return False
         
-        print(f"✅ Graph generated: {output_path}")
+        print(f"Graph generated: {output_path}")
         return True
         
     except Exception as e:
@@ -174,7 +174,7 @@ def generate_graph_with_beacon(
         api_key = load_api_key()
     
     if not api_key:
-        print("❌ GEMINI_API_KEY not found in environment or .env")
+        print("GEMINI_API_KEY not found in environment or .env")
         return False, None
     
     try:
@@ -182,25 +182,25 @@ def generate_graph_with_beacon(
         client = genai.Client(api_key=api_key)
         
         # Generate code
-        print("🤖 Generating graph code with Gemini...")
+        print("Generating graph code with Gemini...")
         graph_code = generate_graph_code(client, document_content, model)
-        print("✅ Graph code generated")
+        print("Graph code generated")
         
         # Execute code and save image
-        print("🎨 Executing graph code...")
+        print("Executing graph code...")
         success = execute_graph_code(graph_code, output_path)
         
         if success:
-            print(f"📊 Professional graph generated: {output_path}")
+            print(f"Professional graph generated: {output_path}")
             if beacon_url:
                 print(f"   Beacon: {beacon_url}")
             return True, output_path
         else:
-            print("❌ Failed to execute graph code")
+            print("Failed to execute graph code")
             return False, None
             
     except Exception as e:
-        print(f"❌ Error in graph generation pipeline: {e}")
+        print(f"Error in graph generation pipeline: {e}")
         return False, None
 
 
@@ -232,6 +232,6 @@ if __name__ == "__main__":
     )
     
     if success:
-        print(f"✅ Test complete: {path}")
+        print(f"Test complete: {path}")
     else:
-        print("❌ Test failed")
+        print("Test failed")

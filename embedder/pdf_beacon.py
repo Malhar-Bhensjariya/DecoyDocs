@@ -103,12 +103,12 @@ def embed_beacon_in_pdf(pdf_path: Path, beacon_url: str, output_path: Optional[P
         with open(output_path_str, "wb") as out_file:
             writer.write(out_file)
         
-        print(f"✅ Beacon embedded in PDF: {beacon_url}")
+        print(f"Beacon embedded in PDF: {beacon_url}")
         return output_path
         
     except Exception as e:
         # Fallback: Try simpler approach with just URI action
-        print(f"⚠️ Primary method failed ({e}), trying fallback...")
+        print(f"Primary method failed ({e}), trying fallback...")
         return _embed_beacon_simple(pdf_path, beacon_url, output_path)
 
 
@@ -150,7 +150,7 @@ def _embed_beacon_simple(pdf_path: Path, beacon_url: str, output_path: Path) -> 
         with open(output_path_str, "wb") as out_file:
             writer.write(out_file)
         
-        print(f"✅ Beacon embedded (simple method) in PDF")
+        print(f"Beacon embedded (simple method) in PDF")
         return output_path
         
     except Exception as e:

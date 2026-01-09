@@ -257,6 +257,6 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     if not OUT_DIR.exists():
-        print("❌ No out/ directory found. Run pipeline.py first.")
+        print("No out/ directory found. Run pipeline.py first.")
         exit(1)
     run_simulation()
