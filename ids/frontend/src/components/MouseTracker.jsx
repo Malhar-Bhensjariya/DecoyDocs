@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
-const MouseTracker = () => {
+const MouseTracker = ({ onPredictionUpdate }) => {
   const coordsBuffer = useRef([]);
-  const [alertMessage, setAlertMessage] = useState(null);
+  const [botCount, setBotCount] = useState(0);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -24,10 +24,22 @@ const MouseTracker = () => {
         const data = response.data;
         console.log("Prediction:", data);
 
-        if (data.result === "Bot") {
-          setAlertMessage("🚨 Bot activity detected!");
-        } else {
-          setAlertMessage(null);
+        // Update bot count
+        const isBot = data.result === "Bot";
+        const newBotCount = isBot ? botCount + 1 : 0;
+        setBotCount(newBotCount);
+
+        // Prepare prediction data for parent component
+        const predictionData = {
+          ...data,
+          botCount: newBotCount,
+          timestamp: new Date().toLocaleTimeString(),
+          shouldAlert: newBotCount > 3,
+        };
+
+        // Send to parent component
+        if (onPredictionUpdate) {
+          onPredictionUpdate(predictionData);
         }
       } catch (error) {
         console.error("Error sending mouse data:", error);
@@ -40,19 +52,9 @@ const MouseTracker = () => {
       clearInterval(interval);
       document.removeEventListener("mousemove", handleMouseMove);
     };
-  }, []);
+  }, [botCount, onPredictionUpdate]);
 
-  return (
-    <>
-      {alertMessage && (
-        <div
-          className="fixed top-5 right-5 bg-red-600 text-white px-6 py-4 rounded-lg font-bold z-50 shadow-lg animate-bounce"
-        >
-          {alertMessage}
-        </div>
-      )}
-    </>
-  );
+  return null;
 };
 
 export default MouseTracker;
