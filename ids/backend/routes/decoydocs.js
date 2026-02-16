@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-const { authenticateToken, requireAdmin } = require('./auth');
+const { authenticateToken, authenticateTokenAllowDecoy, requireAdmin, requireAdminOrDecoy } = require('./auth');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '../storage');
@@ -9,8 +9,8 @@ const STORAGE_DIR = path.join(__dirname, '../storage');
 // Ensure storage directory exists
 fs.mkdir(STORAGE_DIR, { recursive: true }).catch(console.error);
 
-// Get DecoyDocs list (admin only)
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+// Get DecoyDocs list (admin only — non-admin/suspicious users are silently served the decoy list)
+router.get('/', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const files = await fs.readdir(STORAGE_DIR);
     const decoyDocs = [];
@@ -38,7 +38,8 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Create new DecoyDoc (admin only)
-router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
+// Suspicious/non-admin requests will be diverted to decoy responses instead of a 403
+router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const { title, template = 'generic_report' } = req.body;
 
@@ -184,7 +185,7 @@ router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Get DecoyDoc details (admin only)
-router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const filePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 
@@ -202,7 +203,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Update DecoyDoc (admin only)
-router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const { title, content, status } = req.body;
     const filePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
@@ -237,7 +238,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Delete DecoyDoc (admin only)
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const jsonFilePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 
@@ -270,7 +271,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Download DecoyDoc files (admin only)
-router.get('/:id/download/:type', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/:id/download/:type', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const jsonFilePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 

@@ -77,19 +77,54 @@ The application uses MongoDB Atlas. Make sure your connection string is correct 
 5. Admin can view IDS alerts and manage DecoyDocs
 6. Use the attack bot to simulate suspicious behavior
 
-## Attack Simulation
+## Deceptive layer (honeypot) & Attack Simulation
 
-Run the attack bot to test IDS detection:
+We added a second, *deceptive* application layer that keeps suspicious actors inside a believable, read‑only frontend and returns plausible API responses instead of revealing authorization failures.
 
-```bash
-cd ids/backend
-node bot/attack-bot.js
-```
+Key implementation details
+- Detection & marking
+  - Lightweight heuristic runs in the Socket.IO mouse-event handler (`ids/backend/index.js`). Suspicious mouse batches (highly regular timing) create an IDS alert and mark the username as suspicious in memory (`ids/backend/utils/suspicion.js`, TTL default 5 minutes).
+  - The suspicion map is intentionally in-memory for fast responsiveness; see the Developer Notes below to persist it.
 
-The bot will:
-- Login as a regular user
-- Send perfectly linear mouse movements (highly suspicious)
-- Attempt to access DecoyDocs (should be blocked)
+- Middleware behaviour
+  - `authenticateTokenAllowDecoy` — accepts the request but marks it as a **decoy candidate** when token is missing/invalid (no immediate 401/403 sent).
+  - `requireAdminOrDecoy` — used on admin-only routes; for flagged/decoy-candidate requests it returns realistic decoy payloads (and sets `X-Decoy: 1`) instead of a plain 403.
+  - These keep attackers inside the deceptive surface while preserving normal access for legitimate admins.
+
+- Real-time client diversion
+  - Server emits a `force-decoy` Socket.IO event to a connected client when it is flagged; clients listen and immediately redirect to the deceptive UI.
+  - Responses containing decoy payloads include header `X-Decoy: 1` so operators / tests can detect diversion.
+
+- Frontend behaviour
+  - `AuthContext` watches responses for `X-Decoy` and exposes `isDecoy` to the app.
+  - `ProtectedRoute` silently redirects flagged sessions to `/decoy` (no warning shown to the user).
+  - `MouseTracker` listens for `force-decoy` and forces a client-side redirect to `/decoy`.
+  - New route: `/decoy` shows the deceptive, read‑only UI (`src/pages/DecoyLanding.jsx`).
+
+How to test the decoy flow
+1. Start backend and frontend (see Setup Instructions).
+2. Login as regular user (`user` / `user123`) in the frontend.
+3. Run the attack bot to simulate perfect robotic mouse movement:
+   ```bash
+   cd ids/backend
+   node bot/attack-bot.js
+   ```
+4. Expected behavior:
+   - Backend saves an IDS alert and marks the session suspicious.
+   - Server emits `force-decoy`; the client is redirected to `/decoy`.
+   - API responses for admin-only endpoints (e.g. `GET /api/decoydocs`) will return decoy payloads and include header `X-Decoy: 1`.
+5. Manual override: send header `x-force-decoy: 1` to force decoy behaviour on a request.
+
+Developer notes & config
+- Suspicion TTL: `ids/backend/utils/suspicion.js` (DEFAULT_TTL_MS = 5min).
+- Heuristic / alert creation: `ids/backend/index.js` (socket `mouse-events` handler).
+- Middleware: see `ids/backend/routes/auth.js` (`authenticateTokenAllowDecoy`, `requireAdminOrDecoy`).
+- Client-side redirect: `ids/frontend/src/components/MouseTracker.jsx` listens for `force-decoy` and `ids/frontend/src/contexts/AuthContext.jsx` handles `X-Decoy` header.
+
+Design choices / fallbacks
+- Decoy diversion is silent — attackers are not told they were redirected.
+- Non-suspicious unauthorized requests still receive `403` as before.
+- Current state is in-memory (fast); persisting flagged state and adding admin controls to view/clear flags is recommended as a next step.
 
 ## Project Structure
 

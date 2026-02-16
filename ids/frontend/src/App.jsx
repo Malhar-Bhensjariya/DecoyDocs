@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import DecoyDocs from './pages/DecoyDocs'
+import DecoyLanding from './pages/DecoyLanding'
 import ProtectedRoute from './components/ProtectedRoute'
 import MouseTracker from './components/MouseTracker'
 import DemoPage from './components/DemoPage'
@@ -33,6 +34,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Deceptive frontend route — shown silently to flagged users */}
+            <Route path="/decoy" element={<DecoyLanding />} />
+
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
