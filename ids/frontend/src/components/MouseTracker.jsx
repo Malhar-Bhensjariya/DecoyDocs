@@ -1,94 +1,58 @@
-import React, { useEffect, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import io from 'socket.io-client';
+
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 const MouseTracker = () => {
-  const { user, getToken } = useAuth();
-  const socketRef = useRef(null);
-  const eventsBuffer = useRef([]);
-  const movementIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const coordsBuffer = useRef([]);
+  const [alertMessage, setAlertMessage] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
-
-    // Connect to Socket.IO server
-    socketRef.current = io('http://localhost:3001', {
-      auth: {
-        token: getToken()
-      }
-    });
-
-    // Handle connection events
-    socketRef.current.on('connect', () => {
-      console.log('Mouse tracker connected to server');
-    });
-
-    socketRef.current.on('connect_error', (error) => {
-      console.error('Mouse tracker connection failed:', error.message);
-    });
-
-    socketRef.current.on('disconnect', (reason) => {
-      console.log('Mouse tracker disconnected:', reason);
-    });
-
-    // Set up mouse event listeners
-    const handleMouseEvent = (eventType, event) => {
-      const mouseEvent = {
-        eventType,
-        x: event.clientX,
-        y: event.clientY,
-        timestamp: new Date().toISOString(),
-        epoch: Date.now(),
-        movementId: movementIdRef.current
-      };
-
-      eventsBuffer.current.push(mouseEvent);
-
-      // Debug: Log every 10th event to avoid spam
-      if (eventsBuffer.current.length % 10 === 0) {
-        console.log(`Mouse events buffered: ${eventsBuffer.current.length}`);
-      }
+    const handleMouseMove = (e) => {
+      coordsBuffer.current.push([e.clientX, e.clientY]);
     };
 
-    // Add event listeners
-    document.addEventListener('mousemove', (e) => handleMouseEvent('movement', e));
-    document.addEventListener('mousedown', (e) => {
-      if (e.button === 0) handleMouseEvent('left_press', e);
-      else if (e.button === 2) handleMouseEvent('right_press', e);
-    });
-    document.addEventListener('mouseup', (e) => {
-      if (e.button === 0) handleMouseEvent('left_release', e);
-      else if (e.button === 2) handleMouseEvent('right_release', e);
-    });
-    document.addEventListener('wheel', (e) => {
-      handleMouseEvent(e.deltaY > 0 ? 'scroll_down' : 'scroll_up', e);
-    });
+    document.addEventListener("mousemove", handleMouseMove);
 
-    // Send batched events every 2 seconds
-    const interval = setInterval(() => {
-      if (eventsBuffer.current.length > 0 && socketRef.current) {
-        console.log(`Sending ${eventsBuffer.current.length} mouse events to server`);
-        socketRef.current.emit('mouse-events', [...eventsBuffer.current]);
-        eventsBuffer.current = []; // Clear buffer
+    const interval = setInterval(async () => {
+      if (coordsBuffer.current.length < 10) return;
+
+      try {
+        const response = await axios.post("http://localhost:5000/predict", {
+          coords: coordsBuffer.current,
+        });
+
+        const data = response.data;
+        console.log("Prediction:", data);
+
+        if (data.result === "Bot") {
+          setAlertMessage("🚨 Bot activity detected!");
+        } else {
+          setAlertMessage(null);
+        }
+      } catch (error) {
+        console.error("Error sending mouse data:", error);
       }
+
+      coordsBuffer.current = [];
     }, 2000);
 
-    // Cleanup
     return () => {
       clearInterval(interval);
-      document.removeEventListener('mousemove', handleMouseEvent);
-      document.removeEventListener('mousedown', handleMouseEvent);
-      document.removeEventListener('mouseup', handleMouseEvent);
-      document.removeEventListener('wheel', handleMouseEvent);
-
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
+      document.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [user, getToken]);
+  }, []);
 
-  // This component doesn't render anything
-  return null;
+  return (
+    <>
+      {alertMessage && (
+        <div
+          className="fixed top-5 right-5 bg-red-600 text-white px-6 py-4 rounded-lg font-bold z-50 shadow-lg animate-bounce"
+        >
+          {alertMessage}
+        </div>
+      )}
+    </>
+  );
 };
 
 export default MouseTracker;

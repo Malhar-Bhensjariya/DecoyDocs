@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import DecoyDocs from './pages/DecoyDocs'
 import ProtectedRoute from './components/ProtectedRoute'
 import MouseTracker from './components/MouseTracker'
+import DemoPage from './components/DemoPage'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <MouseTracker />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
           <Routes>
+            <Route path="/demo" element={<DemoPage />} />
             <Route path="/login" element={<Login />} />
             <Route
               path="/dashboard"
