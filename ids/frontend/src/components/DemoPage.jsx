@@ -1,11 +1,59 @@
 import React, { useState } from "react";
+import MouseTracker from "./MouseTracker";
 
 const DemoPage = () => {
   const [clicks, setClicks] = useState(0);
   const [hovering, setHovering] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [predictionHistory, setPredictionHistory] = useState([]);
+
+  const handlePredictionUpdate = (data) => {
+    setPrediction(data);
+
+    // Add to history (keep last 10)
+    setPredictionHistory((prev) => [data, ...prev.slice(0, 9)]);
+
+    // Show alert if bot count exceeds 3
+    if (data.shouldAlert) {
+      setShowAlert(true);
+      // Auto-hide alert after 4 seconds
+      setTimeout(() => setShowAlert(false), 4000);
+    }
+  };
+
+  const getResultColor = (result) => {
+    return result === "Human"
+      ? "from-green-500 to-emerald-500"
+      : "from-red-500 to-red-600";
+  };
+
+  const getResultIcon = (result) => {
+    return result === "Human" ? "✅" : "⚠️";
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      <MouseTracker onPredictionUpdate={handlePredictionUpdate} />
+
+      {/* Critical Alert Overlay */}
+      {showAlert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-red-600 text-white px-8 py-6 rounded-2xl shadow-2xl animate-pulse max-w-md">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="text-5xl">🚨</div>
+              <div>
+                <h2 className="text-3xl font-bold">Bot Detected!</h2>
+                <p className="text-red-100">Suspicious activity flagged</p>
+              </div>
+            </div>
+            <p className="text-red-100 text-lg">
+              More than 3 bot detections recorded. Please verify your activity.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -36,7 +84,7 @@ const DemoPage = () => {
           <h1 className="text-6xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
             Behavioral Intrusion Detection
           </h1>
-          
+
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Advanced AI-powered system that analyzes mouse movement patterns in
             real-time to detect and prevent automated bot activity
@@ -120,6 +168,116 @@ const DemoPage = () => {
             </p>
           </div>
         </div>
+
+        {/* Live Prediction Display */}
+        {prediction && (
+          <div className="mb-12 animate-fade-in">
+            <div
+              className={`bg-gradient-to-r ${getResultColor(
+                prediction.result
+              )} rounded-3xl p-8 shadow-2xl text-white border-2 border-white/20`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="text-6xl">{getResultIcon(prediction.result)}</div>
+                  <div>
+                    <h2 className="text-4xl font-bold">{prediction.result}</h2>
+                    <p className="text-white/80">Activity Status</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-white/70">Last Detection</p>
+                  <p className="text-2xl font-bold">{prediction.timestamp}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                  <p className="text-white/70 text-sm mb-2">Human Probability</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold">
+                      {(prediction.probability_human * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white transition-all duration-300"
+                      style={{
+                        width: `${prediction.probability_human * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                  <p className="text-white/70 text-sm mb-2">Bot Detections</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold">
+                      {prediction.botCount}
+                    </span>
+                    <span className="text-white/70">/3</span>
+                  </div>
+                  <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        prediction.botCount > 3
+                          ? "bg-red-400"
+                          : "bg-white"
+                      }`}
+                      style={{
+                        width: `${Math.min((prediction.botCount / 3) * 100, 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Prediction History */}
+        {predictionHistory.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              Detection History
+            </h3>
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-purple-100">
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {predictionHistory.map((pred, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-4 rounded-xl transition-all ${
+                      pred.result === "Human"
+                        ? "bg-green-50 border border-green-200"
+                        : "bg-red-50 border border-red-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-2xl">
+                        {getResultIcon(pred.result)}
+                      </span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">
+                          {pred.result === "Human" ? "Human Activity" : "Bot Activity"}
+                        </p>
+                        <p className="text-sm text-gray-600">{pred.timestamp}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold ${
+                        pred.result === "Human"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}>
+                        {(pred.probability_human * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Interactive Demo Section */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-purple-100 mb-12">
