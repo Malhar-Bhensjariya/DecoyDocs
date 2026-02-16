@@ -101,9 +101,9 @@ async function loginAndAttack() {
         socket.emit('mouse-events', mouseEvents);
       }, 2000);
 
-      // Try to access DecoyDocs after 10 seconds (should be blocked for regular user)
+      // Try to access DecoyDocs after 10 seconds — after anomalous mouse-events the user should be diverted to decoy content
       setTimeout(async () => {
-        console.log('🤖 Bot: Attempting to access DecoyDocs (should be blocked)...');
+        console.log('🤖 Bot: Attempting to access DecoyDocs (expect DECoy content if flagged)...');
 
         try {
           const decoyResponse = await fetch(`${SERVER_URL}/api/decoydocs`, {
@@ -112,10 +112,14 @@ async function loginAndAttack() {
             }
           });
 
-          if (decoyResponse.status === 403) {
-            console.log('🤖 Bot: Access denied to DecoyDocs (expected for regular user)');
+          const isDecoy = decoyResponse.headers.get('x-decoy') === '1';
+
+          if (decoyResponse.ok && isDecoy) {
+            console.log('🤖 Bot: Received DECoy content (user successfully diverted)');
+          } else if (decoyResponse.status === 403) {
+            console.log('🤖 Bot: Access denied to DecoyDocs (regular user, not flagged)');
           } else {
-            console.log('🤖 Bot: Unexpected access to DecoyDocs!');
+            console.log('🤖 Bot: Unexpected response to DecoyDocs:', decoyResponse.status);
           }
         } catch (error) {
           console.log('🤖 Bot: Error accessing DecoyDocs:', error.message);
@@ -133,6 +137,10 @@ async function loginAndAttack() {
 
     socket.on('disconnect', () => {
       console.log('🤖 Bot: Disconnected from server');
+    });
+
+    socket.on('force-decoy', (payload) => {
+      console.log('🤖 Bot: Received force-decoy from server', payload);
     });
 
     socket.on('connect_error', (error) => {

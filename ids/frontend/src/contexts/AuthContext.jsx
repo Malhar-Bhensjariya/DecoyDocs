@@ -14,8 +14,20 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDecoy, setIsDecoy] = useState(false);
 
   useEffect(() => {
+    // Install a global axios response interceptor to catch `X-Decoy` header at any time
+    const interceptorId = axios.interceptors.response.use((response) => {
+      const decoyHeader = response.headers['x-decoy'];
+      if (decoyHeader === '1') setIsDecoy(true);
+      return response;
+    }, (error) => {
+      // also inspect error responses
+      if (error?.response?.headers?.['x-decoy'] === '1') setIsDecoy(true);
+      return Promise.reject(error);
+    });
+
     // Check if user is logged in on app start
     const token = localStorage.getItem('token');
     if (token) {
@@ -25,6 +37,9 @@ export const AuthProvider = ({ children }) => {
       })
         .then(response => {
           setUser(response.data);
+          // backend can signal decoy with header `X-Decoy: 1`
+          const decoyHeader = response.headers['x-decoy'];
+          setIsDecoy(decoyHeader === '1');
         })
         .catch(() => {
           localStorage.removeItem('token');
@@ -35,6 +50,10 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
+
+    return () => {
+      axios.interceptors.response.eject(interceptorId);
+    };
   }, []);
 
   const login = async (username, password) => {
@@ -47,6 +66,10 @@ export const AuthProvider = ({ children }) => {
       const { token, user: userData } = response.data;
       localStorage.setItem('token', token);
       setUser(userData);
+
+      // If backend already marks session as decoy, capture that (some setups may flag immediately)
+      const decoyHeader = response.headers['x-decoy'];
+      setIsDecoy(decoyHeader === '1');
 
       return { success: true };
     } catch (error) {
@@ -68,7 +91,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     getToken,
-    loading
+    loading,
+    isDecoy
   };
 
   return (

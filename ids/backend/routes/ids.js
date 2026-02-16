@@ -1,11 +1,11 @@
 const express = require('express');
 const IdsAlert = require('../models/IdsAlert');
-const { authenticateToken, requireAdmin } = require('./auth');
+const { authenticateToken, authenticateTokenAllowDecoy, requireAdmin, requireAdminOrDecoy } = require('./auth');
 
 const router = express.Router();
 
-// Get all IDS alerts (admin only)
-router.get('/alerts', authenticateToken, requireAdmin, async (req, res) => {
+// Get all IDS alerts (admin only — non-admin/suspicious users will receive decoy alerts)
+router.get('/alerts', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const alerts = await IdsAlert.find()
       .populate('userId', 'username')
@@ -50,8 +50,8 @@ router.get('/my-alerts', authenticateToken, async (req, res) => {
   }
 });
 
-// Update alert status (admin only)
-router.patch('/alert/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Update alert status (admin only — suspicious/non-admin requests will be diverted to decoy)
+router.patch('/alert/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
   try {
     const { status } = req.body;
     const alert = await IdsAlert.findByIdAndUpdate(

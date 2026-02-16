@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isDecoy } = useAuth();
 
   if (loading) {
     return (
@@ -15,6 +15,11 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If backend flagged this session as decoy, silently redirect to the deceptive UI
+  if (isDecoy) {
+    return <Navigate to="/decoy" replace />;
   }
 
   if (adminOnly && user.role !== 'admin') {
