@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs').promises;
+const fSync = require('fs');
 const path = require('path');
 const { authenticateToken, authenticateTokenAllowDecoy, requireAdmin, requireAdminOrDecoy } = require('./auth');
 
@@ -38,8 +39,8 @@ router.get('/', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, re
 });
 
 // Create new DecoyDoc (admin only)
-// Suspicious/non-admin requests will be diverted to decoy responses instead of a 403
-router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
+// Suspicious/non-admin requests will be rejected for creation
+router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { title, template = 'generic_report' } = req.body;
 
@@ -51,19 +52,26 @@ router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (
     const fileName = `${id}.json`;
     const filePath = path.join(STORAGE_DIR, fileName);
 
-    // Generate document using LLM pipeline
-    const { spawn } = require('child_process');
-    const scriptPath = path.join(__dirname, '../../../llm-docgen/generate_docs.py');
-    const pipelinePath = path.join(__dirname, '../../../pipeline.py');
+    // Choose Python executable: prefer env PYTHON, then Windows 'py', then 'python'
+    const pythonCmd = process.env.PYTHON || (process.platform === 'win32' ? 'py' : 'python3');
 
-    // First generate the document content using LLM
-    const generateProcess = spawn('python3', [
-      scriptPath,
-      '--count', '1',
-      '--template', template,
-      '--title', title
+    // Generate document using lightweight LLM generator (no heavy dependencies)
+    const { spawn } = require('child_process');
+    const generatorPath = path.join(__dirname, '../../../../llm-docgen/simple_generate.py');
+
+    // Create temp output directory for this document
+    const tempGenDir = path.join(__dirname, '../../../../temp_gen');
+    if (!fSync.existsSync(tempGenDir)) {
+      fSync.mkdirSync(tempGenDir, { recursive: true });
+    }
+
+    const generateProcess = spawn(pythonCmd, [
+      generatorPath,
+      title,
+      template,
+      tempGenDir
     ], {
-      cwd: path.join(__dirname, '../../../'),
+      cwd: path.join(__dirname, '../../../../llm-docgen/'),
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
@@ -89,77 +97,33 @@ router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (
       generateProcess.on('error', reject);
     });
 
-    // Find the generated document
-    const fs = require('fs');
-    const generatedDocsDir = path.join(__dirname, '../../../generated_docs');
-    const files = fs.readdirSync(generatedDocsDir);
-    const docxFiles = files.filter(file => file.endsWith('.docx'));
-    const latestDocx = docxFiles.sort((a, b) => {
-      const statA = fs.statSync(path.join(generatedDocsDir, a));
-      const statB = fs.statSync(path.join(generatedDocsDir, b));
-      return statB.mtime - statA.mtime;
-    })[0];
-
-    if (!latestDocx) {
-      throw new Error('No document was generated');
+    // Parse the JSON output from simple_generate.py
+    let generationResult;
+    try {
+      generationResult = JSON.parse(generateOutput);
+      if (!generationResult.success) {
+        throw new Error(generationResult.error || 'Generation failed');
+      }
+    } catch (parseError) {
+      throw new Error(`Failed to parse generator output: ${generateOutput}`);
     }
 
-    const docxPath = path.join(generatedDocsDir, latestDocx);
-
-    // Now run the embedding pipeline
-    const embedProcess = spawn('python3', [
-      pipelinePath
-    ], {
-      cwd: path.join(__dirname, '../../../'),
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    let embedOutput = '';
-    let embedError = '';
-
-    embedProcess.stdout.on('data', (data) => {
-      embedOutput += data.toString();
-    });
-
-    embedProcess.stderr.on('data', (data) => {
-      embedError += data.toString();
-    });
-
-    await new Promise((resolve, reject) => {
-      embedProcess.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Embedding pipeline failed: ${embedError}`));
-        }
-      });
-      embedProcess.on('error', reject);
-    });
-
-    // Find the embedded document
-    const outDir = path.join(__dirname, '../../../out');
-    const outFiles = fs.readdirSync(outDir);
-    const uuidDirs = outFiles.filter(file => {
-      const fullPath = path.join(outDir, file);
-      return fs.statSync(fullPath).isDirectory();
-    });
-
-    const latestUuidDir = uuidDirs.sort((a, b) => {
-      const statA = fs.statSync(path.join(outDir, a));
-      const statB = fs.statSync(path.join(outDir, b));
-      return statB.mtime - statA.mtime;
-    })[0];
-
-    if (!latestUuidDir) {
-      throw new Error('No embedded document was created');
+    const generatedDocxPath = generationResult.path;
+    if (!fSync.existsSync(generatedDocxPath)) {
+      throw new Error(`Generated document not found at ${generatedDocxPath}`);
     }
 
-    const embeddedDocPath = path.join(outDir, latestUuidDir, 'embedded.docx');
-
-    // Copy the embedded document to storage
+    // Copy the generated document to storage
     const storageDocName = `${id}_document.docx`;
     const storageDocPath = path.join(STORAGE_DIR, storageDocName);
-    fs.copyFileSync(embeddedDocPath, storageDocPath);
+    fSync.copyFileSync(generatedDocxPath, storageDocPath);
+
+    // Cleanup temp directory
+    try {
+      fSync.rmSync(tempGenDir, { recursive: true, force: true });
+    } catch (e) {
+      // Ignore cleanup errors
+    }
 
     const decoyDoc = {
       id,
@@ -169,9 +133,8 @@ router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (
       status: 'generated',
       filePath: fileName,
       documentPath: storageDocName,
-      uuid: latestUuidDir,
-      originalDocx: latestDocx,
-      embeddedDocPath: path.join('out', latestUuidDir, 'embedded.docx')
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      accessCount: 0
     };
 
     // Save metadata to JSON file
@@ -185,7 +148,7 @@ router.post('/create', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (
 });
 
 // Get DecoyDoc details (admin only)
-router.get('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
+router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const filePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 
@@ -203,7 +166,7 @@ router.get('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req,
 });
 
 // Update DecoyDoc (admin only)
-router.put('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { title, content, status } = req.body;
     const filePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
@@ -238,7 +201,7 @@ router.put('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req,
 });
 
 // Delete DecoyDoc (admin only)
-router.delete('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const jsonFilePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 
@@ -271,7 +234,7 @@ router.delete('/:id', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (r
 });
 
 // Download DecoyDoc files (admin only)
-router.get('/:id/download/:type', authenticateTokenAllowDecoy, requireAdminOrDecoy, async (req, res) => {
+router.get('/:id/download/:type', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const jsonFilePath = path.join(STORAGE_DIR, `${req.params.id}.json`);
 

@@ -1,0 +1,119 @@
+{
+  "timestamp": "2026-02-16T23:47:11.270341",
+  "attacks": [
+    {
+      "type": "BOT_DETECTION",
+      "endpoint": "http://localhost:5173/demo",
+      "success": false,
+      "details": "Message: move target out of bounds\n  (Session info: chrome=145.0.7632.75)\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t0x7ff7d9384455\n\t0x7ff7d93844b0\n\t0x7ff7d911d286\n\t0x7ff7d91d1026\n\t0x7ff7d91a17ca\n\t0x7ff7d91c5728\n\t0x7ff7d9168e38\n\t0x7ff7d9169d23\n\t0x7ff7d9653b60\n\t0x7ff7d964e3e8\n\t0x7ff7d966e75a\n\t0x7ff7d93a0805\n\t0x7ff7d93a97ac\n\t0x7ff7d938d7b4\n\t0x7ff7d938d966\n\t0x7ff7d9373477\n\t0x7ffbaf26e8d7\n\t0x7ffbb116c53c\n",
+      "timestamp": "2026-02-16T23:48:24.742286"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/api/decoydocs",
+      "success": true,
+      "details": "Status 200 - List all honeypot documents - VULNERABLE!",
+      "timestamp": "2026-02-16T23:48:25.789253"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/api/decoydocs",
+      "success": false,
+      "details": "Status 404",
+      "timestamp": "2026-02-16T23:48:25.794998"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/api/dashboard",
+      "success": false,
+      "details": "Status 404",
+      "timestamp": "2026-02-16T23:48:25.799931"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/api/auth/admin",
+      "success": false,
+      "details": "Status 404",
+      "timestamp": "2026-02-16T23:48:25.807433"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/api/users",
+      "success": false,
+      "details": "Status 404",
+      "timestamp": "2026-02-16T23:48:25.811779"
+    },
+    {
+      "type": "UNAUTHORIZED_ACCESS",
+      "endpoint": "/admin",
+      "success": false,
+      "details": "Status 404",
+      "timestamp": "2026-02-16T23:48:25.815505"
+    },
+    {
+      "type": "STATIC_THEFT",
+      "endpoint": "/api/config",
+      "success": true,
+      "details": "Retrieved 124 bytes (Simulated)",
+      "timestamp": "2026-02-16T23:48:26.824236"
+    },
+    {
+      "type": "XSS",
+      "endpoint": "/api/decoydocs/create",
+      "success": true,
+      "details": "Payload accepted: <script>alert(1)</script>",
+      "timestamp": "2026-02-16T23:48:28.969970"
+    },
+    {
+      "type": "XSS",
+      "endpoint": "/api/decoydocs/create",
+      "success": true,
+      "details": "Payload accepted: javascript:alert(1)",
+      "timestamp": "2026-02-16T23:48:28.975474"
+    },
+    {
+      "type": "ML_PREDICTION_PERFECT_LINEAR",
+      "endpoint": "/predict",
+      "success": false,
+      "details": "Prediction: {'prediction': 1, 'probability_human': 0.5357366800308228, 'result': 'Human'}",
+      "timestamp": "2026-02-16T23:48:32.030495"
+    },
+    {
+      "type": "ML_PREDICTION_TELEPORT",
+      "endpoint": "/predict",
+      "success": true,
+      "details": "Prediction: {'prediction': 0, 'probability_human': 0.18023107945919037, 'result': 'Bot'}",
+      "timestamp": "2026-02-16T23:48:34.085360"
+    },
+    {
+      "type": "ML_PREDICTION_FAST_LINEAR",
+      "endpoint": "/predict",
+      "success": true,
+      "details": "Prediction: {'prediction': 0, 'probability_human': 0.2135043889284134, 'result': 'Bot'}",
+      "timestamp": "2026-02-16T23:48:36.174224"
+    }
+  ],
+  "beacons_triggered": [
+    {
+      "beacon": "Flask ML model triggered by Teleport",
+      "timestamp": "2026-02-16T23:48:34.085867"
+    },
+    {
+      "beacon": "Flask ML model triggered by Fast Linear",
+      "timestamp": "2026-02-16T23:48:36.175727"
+    }
+  ],
+  "decoy_responses": [
+    {
+      "decoy": "Decoy response: {'status': 'access_denied', 'tracking_id': 'bec-1771265907'}",
+      "timestamp": "2026-02-16T23:48:27.853711"
+    }
+  ],
+  "sensitive_data": [
+    {
+      "source": "/api/config",
+      "content_length": 124,
+      "content_preview": "{\"debug\": true, \"admin_email\": \"admin@decoydocs.internal\", \"secret\": \"x8s7d8f7s8d7f\"}"
+    }
+  ]
+}
