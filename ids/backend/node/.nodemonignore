@@ -1,0 +1,5 @@
+# Ignore persistent storage and generated artifacts
+storage
+temp_gen
+*.log
+__pycache__/

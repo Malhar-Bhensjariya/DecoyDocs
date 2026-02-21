@@ -156,9 +156,7 @@ const requireAdminOrDecoy = async (req, res, next) => {
       // route context: check the originalUrl to choose response
       if (req.baseUrl && req.baseUrl.includes('decoydocs')) {
         // Return the same shape as the real decoydocs list endpoint
-        const STORAGE_DIR = path.join(__dirname, '../storage');
-        const files = await fs.readdir(STORAGE_DIR);
-        const decoyDocs = [];
+        const STORAGE_DIR = path.join(__dirname, '../../storage');
         for (const file of files) {
           if (file.endsWith('.json')) {
             const filePath = path.join(STORAGE_DIR, file);

@@ -1,0 +1,18 @@
+{
+  "id": "1771309201119",
+  "uuid": "22eceeaa-4773-44c3-bf33-dbc3cc131697",
+  "title": "Sales Document",
+  "template": "sales_pipeline",
+  "createdAt": "2026-02-17T06:20:30.120Z",
+  "status": "generated",
+  "filePath": "1771309201119.json",
+  "documentPath": "1771309201119_document.docx",
+  "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "accessCount": 0,
+  "beacon": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
+  "beacon_urls": {
+    "beacon": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
+    "fonts": "https://fyp-backend-98o5.onrender.com/fonts/opensans-regular.woff2?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=d840a0ac",
+    "assets": "https://fyp-backend-98o5.onrender.com/assets/media/logo.png?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=f6f27c3c"
+  }
+}

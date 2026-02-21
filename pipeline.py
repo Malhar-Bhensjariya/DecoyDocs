@@ -290,8 +290,43 @@ def main():
     # Send metadata to honeypot server
     try:
         response = requests.post(DOCUMENTS_API_URL, json=documents_metadata)
+        print(f"Documents API response: {response.status_code} - {response.text}")
+
+        try:
+            resp_json = response.json()
+        except Exception:
+            resp_json = None
+
+        # Normalize possible response keys from different servers
+        registered = []
+        if isinstance(resp_json, dict):
+            if 'resource_ids' in resp_json:
+                registered = resp_json.get('resource_ids') or []
+            elif 'registered_uuids' in resp_json:
+                registered = resp_json.get('registered_uuids') or []
+            elif 'resource_id' in resp_json:
+                registered = [resp_json.get('resource_id')]
+            elif 'registered_count' in resp_json and 'registered_uuids' in resp_json:
+                registered = resp_json.get('registered_uuids') or []
+
+        # Informative output
         if response.status_code == 200:
             print("Metadata sent to honeypot server successfully.")
+            if registered:
+                print(f"Registered resource ids returned by API: {registered}")
+            else:
+                print("No explicit registered IDs returned by API; check server UI if needed.")
+
+            # Verify each UUID was acknowledged by trying the beacon lookup (lightweight existence check)
+            for u in uuids:
+                try:
+                    beacon_resp = requests.get(f"{API_BASE_URL}/api/beacon", params={'resource_id': u}, timeout=5)
+                    if beacon_resp.status_code == 200:
+                        print(f"Verification ok: UUID {u} exists on remote server (beacon endpoint returned 200).")
+                    else:
+                        print(f"Verification warning: UUID {u} not found via beacon (status {beacon_resp.status_code}).")
+                except Exception as e:
+                    print(f"Could not verify UUID {u} via beacon endpoint: {e}")
         else:
             print(f"Failed to send metadata: {response.status_code} - {response.text}")
     except Exception as e:

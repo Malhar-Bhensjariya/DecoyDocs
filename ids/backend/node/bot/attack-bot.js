@@ -59,6 +59,23 @@ function generateAnomalousMouseEvents() {
 }
 
 async function loginAndAttack() {
+  // Helper: fire a beacon URL and log outcome
+  async function fireBeacon(url, label = '') {
+    try {
+      // Normalize relative URLs to the honeypot beacon base
+      const BEACON_BASE = process.env.BEACON_BASE || 'http://localhost:5000';
+      if (url.startsWith('/')) url = `${BEACON_BASE}${url}`;
+      if (url.includes('localhost:3001')) url = url.replace('http://localhost:3001', BEACON_BASE);
+
+      const resp = await fetch(url, { method: 'GET' });
+      console.log(`    [BEACON] ${label || url} -> ${resp.status}`);
+      return resp.ok;
+    } catch (err) {
+      console.log(`    [BEACON] ${label || url} -> ERROR: ${err.message}`);
+      return false;
+    }
+  }
+
   try {
     console.log('🤖 Bot: Starting attack simulation...');
 
@@ -102,6 +119,7 @@ async function loginAndAttack() {
       }, 2000);
 
       // Try to access DecoyDocs after 10 seconds — after anomalous mouse-events the user should be diverted to decoy content
+      // After anomalous mouse-events, attempt to enumerate decoy docs and fire any embedded beacons
       setTimeout(async () => {
         console.log('🤖 Bot: Attempting to access DecoyDocs (expect DECoy content if flagged)...');
 
@@ -116,6 +134,55 @@ async function loginAndAttack() {
 
           if (decoyResponse.ok && isDecoy) {
             console.log('🤖 Bot: Received DECoy content (user successfully diverted)');
+
+            // Parse decoy list and look for beacon info
+            const docs = await decoyResponse.json();
+            for (const d of docs) {
+              try {
+                // Prefer beacon_urls exposed in the decoy listing
+                if (d.beacon_urls) {
+                  console.log(`    [+] Found beacon_urls for doc ${d.id || d.uuid}`);
+                  for (const [k, url] of Object.entries(d.beacon_urls)) {
+                    await fireBeacon(url, `${d.title || d.id} (${k})`);
+                  }
+                  continue;
+                }
+
+                // Fallback: attempt to GET metadata via download/json (may be admin-only)
+                try {
+                  const metaResp = await fetch(`${SERVER_URL}/api/decoydocs/${d.id}/download/json`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  if (metaResp.ok) {
+                    const meta = await metaResp.json();
+                    if (meta.beacon) await fireBeacon(meta.beacon, `${d.title || d.id} (beacon)`);
+                    if (meta.beacon_urls) {
+                      for (const url of Object.values(meta.beacon_urls)) await fireBeacon(url, `${d.title || d.id} (beacon_urls)`);
+                    }
+                    continue; // done with this doc
+                  }
+                } catch (err) {
+                  // ignore — try next discovery method
+                }
+
+                // Last-resort: construct reasonable beacon candidates using known patterns
+                const BEACON_BASE = process.env.BEACON_BASE || 'http://localhost:5000';
+                const candidates = [];
+                if (d.uuid) {
+                  candidates.push(`${BEACON_BASE}/api/beacon?resource_id=${encodeURIComponent(d.uuid)}`);
+                }
+                if (d.id) {
+                  candidates.push(`${BEACON_BASE}/api/beacon?resource_id=${encodeURIComponent(d.id)}`);
+                  candidates.push(`${BEACON_BASE}/fonts/inter-regular.woff2?resource_id=${encodeURIComponent(d.id)}`);
+                  candidates.push(`${BEACON_BASE}/assets/media/logo.png?resource_id=${encodeURIComponent(d.id)}`);
+                }
+                for (const c of candidates) await fireBeacon(c, `${d.title || d.id} (candidate)`);
+
+              } catch (err) {
+                console.log('    [-] Error processing doc entry:', err && err.message ? err.message : err);
+              }
+            }
+
           } else if (decoyResponse.status === 403) {
             console.log('🤖 Bot: Access denied to DecoyDocs (regular user, not flagged)');
           } else {

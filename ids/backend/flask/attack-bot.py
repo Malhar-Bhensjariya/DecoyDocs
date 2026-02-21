@@ -33,10 +33,11 @@ PROJECT_ROOT = CURRENT_DIR.parents[2]  # ids/backend/flask -> ids/backend -> ids
 TARGET_URL = "http://localhost:5173"
 API_BASE = "http://localhost:3001"
 FLASK_BASE = "http://localhost:5000"
+BEACON_BASE = "https://fyp-backend-98o5.onrender.com"
 DEMO_PAGE = f"{TARGET_URL}/demo"
 ATTACK_LOG = "attack_log.json"
 OUT_DIR = PROJECT_ROOT / "out"
-STORAGE_DIR = PROJECT_ROOT / "ids" / "backend" / "node" / "storage"
+STORAGE_DIR = PROJECT_ROOT / "ids" / "backend" / "storage"
 
 # Store discovered document IDs from API
 DISCOVERED_DOCS = []
@@ -107,9 +108,10 @@ class AttackBot:
         """
         print("[*] Attempting to authenticate with default credentials...")
         try:
-            response = self.session.post(f"{API_BASE}/../auth/login", 
+            # call the node backend auth endpoint and use the correct field names
+            response = self.session.post(f"{API_BASE}/api/auth/login", 
                 json={
-                    "email": "admin@example.com", 
+                    "username": "admin", 
                     "password": "admin123"
                 },
                 timeout=5)
@@ -124,7 +126,7 @@ class AttackBot:
                         return True
                 except:
                     pass
-        except:
+        except Exception:
             pass
         
         print("    [-] Authentication failed (expected - documents are protected)")
@@ -157,10 +159,11 @@ class AttackBot:
                 time.sleep(0.01)  # Consistent timing (10ms)
             
             # Circle pattern - still robotic
-            for i in range(360, step=30):
+            import math
+            for angle in range(0, 360, 30):
                 radius = 50
-                x = int(radius * (i / 360.0))
-                y = int(radius * (i / 360.0))
+                x = int(radius * math.cos(math.radians(angle)))
+                y = int(radius * math.sin(math.radians(angle)))
                 actions.move_by_offset(x, y).perform()
                 time.sleep(0.02)  # Very consistent
             
@@ -307,7 +310,7 @@ class AttackBot:
         # Try to enumerate documents via API
         # Even without auth, we might get decoy data that reveals IDs
         try:
-            response = self.session.get(f"{API_BASE}/decoydocs", timeout=5)
+            response = self.session.get(f"{API_BASE}/api/decoydocs", timeout=5)
             
             if response.status_code == 200:
                 try:
@@ -328,7 +331,7 @@ class AttackBot:
                     self.log_decoy("DecoyDoc list returned non-JSON data (decoy response)")
             elif response.status_code == 404:
                 # Simulate a decoy response for demonstration
-                print(f"    [+] (SIMULATED) Received decoy response from {API_BASE}/decoydocs")
+                print(f"    [+] (SIMULATED) Received decoy response from {API_BASE}/api/decoydocs")
                 self.log_decoy(f"Decoy response: {{'status': 'access_denied', 'tracking_id': 'bec-{int(time.time())}'}}")
             elif response.status_code == 403:
                 # Got a decoy response - analyze it
@@ -371,7 +374,7 @@ class AttackBot:
             
             # Try to GET the document details (might work even without auth)
             try:
-                response = self.session.get(f"{API_BASE}/decoydocs/{doc_id}", timeout=5)
+                response = self.session.get(f"{API_BASE}/api/decoydocs/{doc_id}", timeout=5)
                 if response.status_code == 200:
                     try:
                         doc_data = response.json()
@@ -393,7 +396,7 @@ class AttackBot:
             formats = ['docx', 'json', 'txt']
             
             for fmt in formats:
-                url = f"{API_BASE}/decoydocs/{doc_id}/download/{fmt}"
+                url = f"{API_BASE}/api/decoydocs/{doc_id}/download/{fmt}"
                 response = self.session.get(url, timeout=10, allow_redirects=True)
                 
                 if response.status_code == 200:
@@ -454,7 +457,7 @@ class AttackBot:
         xss_payloads = ["<script>alert(1)</script>", "javascript:alert(1)"]
         for payload in xss_payloads:
             try:
-                response = self.session.post(f"{API_BASE}/decoydocs/create",
+                response = self.session.post(f"{API_BASE}/api/decoydocs/create",
                                            json={"title": payload}, timeout=5)
                 if response.status_code != 401:
                     self.log_attack("XSS", f"/api/decoydocs/create", True,
@@ -520,6 +523,16 @@ class AttackBot:
         Simulates document access to trigger tracking beacons.
         """
         try:
+            # Handle relative URLs (e.g., "/api/beacon?...") by prefixing BEACON_BASE
+            if url.startswith("/"):
+                url = f"{BEACON_BASE}{url}"
+
+            # Normalize common local test host references so manifests generated for local
+            # testing still target the configured honeypot backend when appropriate.
+            if "http://localhost:3001" in url:
+                url = url.replace("http://localhost:3001", BEACON_BASE)
+
+            print(f"    [>] Firing beacon: {url}")
             response = self.session.get(url, timeout=5, allow_redirects=False)
             self.log_beacon(f"Beacon fired: {url} (Status: {response.status_code})")
             return response.status_code == 200
@@ -527,7 +540,7 @@ class AttackBot:
             self.log_beacon(f"Beacon timeout (server may have logged it): {url}")
             return False
         except Exception as e:
-            self.log_attack("BEACON_FIRE", url, False, str(e))
+            self.log_beacon(f"Beacon failed: {url} ({e})")
             return False
 
     def trigger_manifest_beacons(self):
@@ -643,7 +656,7 @@ class AttackBot:
         for doc_id in DISCOVERED_DOCS:
             try:
                 # Try to get JSON via API
-                response = self.session.get(f"{API_BASE}/decoydocs/{doc_id}/download/json", timeout=5)
+                response = self.session.get(f"{API_BASE}/api/decoydocs/{doc_id}/download/json", timeout=5)
                 
                 if response.status_code == 200:
                     try:

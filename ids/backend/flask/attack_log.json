@@ -1,114 +1,288 @@
 {
-  "timestamp": "2026-02-16T23:47:11.270341",
+  "timestamp": "2026-02-17T12:27:01.719088",
   "attacks": [
     {
       "type": "BOT_DETECTION",
       "endpoint": "http://localhost:5173/demo",
       "success": false,
-      "details": "Message: move target out of bounds\n  (Session info: chrome=145.0.7632.75)\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t0x7ff7d9384455\n\t0x7ff7d93844b0\n\t0x7ff7d911d286\n\t0x7ff7d91d1026\n\t0x7ff7d91a17ca\n\t0x7ff7d91c5728\n\t0x7ff7d9168e38\n\t0x7ff7d9169d23\n\t0x7ff7d9653b60\n\t0x7ff7d964e3e8\n\t0x7ff7d966e75a\n\t0x7ff7d93a0805\n\t0x7ff7d93a97ac\n\t0x7ff7d938d7b4\n\t0x7ff7d938d966\n\t0x7ff7d9373477\n\t0x7ffbaf26e8d7\n\t0x7ffbb116c53c\n",
-      "timestamp": "2026-02-16T23:48:24.742286"
+      "details": "Message: move target out of bounds\n  (Session info: chrome=145.0.7632.75)\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t0x7ff70ed54455\n\t0x7ff70ed544b0\n\t0x7ff70eaed286\n\t0x7ff70eba1026\n\t0x7ff70eb717ca\n\t0x7ff70eb95728\n\t0x7ff70eb38e38\n\t0x7ff70eb39d23\n\t0x7ff70f023b60\n\t0x7ff70f01e3e8\n\t0x7ff70f03e75a\n\t0x7ff70ed70805\n\t0x7ff70ed797ac\n\t0x7ff70ed5d7b4\n\t0x7ff70ed5d966\n\t0x7ff70ed43477\n\t0x7ffbaf26e8d7\n\t0x7ffbb116c53c\n",
+      "timestamp": "2026-02-17T12:28:15.493894"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/decoydocs",
       "success": true,
       "details": "Status 200 - List all honeypot documents - VULNERABLE!",
-      "timestamp": "2026-02-16T23:48:25.789253"
+      "timestamp": "2026-02-17T12:28:16.550801"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/decoydocs",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-16T23:48:25.794998"
+      "timestamp": "2026-02-17T12:28:16.563607"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/dashboard",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-16T23:48:25.799931"
+      "timestamp": "2026-02-17T12:28:16.570693"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/auth/admin",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-16T23:48:25.807433"
+      "timestamp": "2026-02-17T12:28:16.582998"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/users",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-16T23:48:25.811779"
+      "timestamp": "2026-02-17T12:28:16.592132"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/admin",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-16T23:48:25.815505"
+      "timestamp": "2026-02-17T12:28:16.600148"
     },
     {
       "type": "STATIC_THEFT",
       "endpoint": "/api/config",
       "success": true,
       "details": "Retrieved 124 bytes (Simulated)",
-      "timestamp": "2026-02-16T23:48:26.824236"
+      "timestamp": "2026-02-17T12:28:17.616112"
     },
     {
-      "type": "XSS",
-      "endpoint": "/api/decoydocs/create",
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "HR Review.docx",
       "success": true,
-      "details": "Payload accepted: <script>alert(1)</script>",
-      "timestamp": "2026-02-16T23:48:28.969970"
+      "details": "Downloaded 39865 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:18.834690"
     },
     {
-      "type": "XSS",
-      "endpoint": "/api/decoydocs/create",
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "HR Review.json",
       "success": true,
-      "details": "Payload accepted: javascript:alert(1)",
-      "timestamp": "2026-02-16T23:48:28.975474"
+      "details": "Downloaded 964 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:18.852669"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "HR Review.txt",
+      "success": true,
+      "details": "Downloaded 39865 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.448078"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Financial Document.docx",
+      "success": true,
+      "details": "Downloaded 38578 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.506963"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Financial Document.json",
+      "success": true,
+      "details": "Downloaded 972 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.535191"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Financial Document.txt",
+      "success": true,
+      "details": "Downloaded 38578 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.748785"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Sales Document.docx",
+      "success": true,
+      "details": "Downloaded 40551 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.811598"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Sales Document.json",
+      "success": true,
+      "details": "Downloaded 972 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:22.825749"
+    },
+    {
+      "type": "DECOYDOC_DOWNLOAD",
+      "endpoint": "Sales Document.txt",
+      "success": true,
+      "details": "Downloaded 40551 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-02-17T12:28:23.127007"
     },
     {
       "type": "ML_PREDICTION_PERFECT_LINEAR",
       "endpoint": "/predict",
       "success": false,
       "details": "Prediction: {'prediction': 1, 'probability_human': 0.5357366800308228, 'result': 'Human'}",
-      "timestamp": "2026-02-16T23:48:32.030495"
+      "timestamp": "2026-02-17T12:28:37.518920"
     },
     {
       "type": "ML_PREDICTION_TELEPORT",
       "endpoint": "/predict",
       "success": true,
       "details": "Prediction: {'prediction': 0, 'probability_human': 0.18023107945919037, 'result': 'Bot'}",
-      "timestamp": "2026-02-16T23:48:34.085360"
+      "timestamp": "2026-02-17T12:28:39.594274"
     },
     {
       "type": "ML_PREDICTION_FAST_LINEAR",
       "endpoint": "/predict",
       "success": true,
       "details": "Prediction: {'prediction': 0, 'probability_human': 0.2135043889284134, 'result': 'Bot'}",
-      "timestamp": "2026-02-16T23:48:36.174224"
+      "timestamp": "2026-02-17T12:28:41.716744"
+    },
+    {
+      "type": "STORAGE_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9",
+      "success": true,
+      "details": "Document: HR Review (ID: 1771307385788)",
+      "timestamp": "2026-02-17T12:28:51.691961"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9",
+      "success": true,
+      "details": "Field: beacon (Document: HR Review)",
+      "timestamp": "2026-02-17T12:28:51.937948"
+    },
+    {
+      "type": "STORAGE_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+      "success": false,
+      "details": "Document: Financial Document (ID: 1771308670528)",
+      "timestamp": "2026-02-17T12:28:52.128058"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+      "success": false,
+      "details": "Field: beacon (Document: Financial Document)",
+      "timestamp": "2026-02-17T12:28:52.315574"
+    },
+    {
+      "type": "STORAGE_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
+      "success": true,
+      "details": "Document: Sales Document (ID: 1771309201119)",
+      "timestamp": "2026-02-17T12:28:52.476917"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
+      "success": true,
+      "details": "Field: beacon (Document: Sales Document)",
+      "timestamp": "2026-02-17T12:28:52.652099"
     }
   ],
   "beacons_triggered": [
     {
+      "beacon": "Beacon found in /api/decoydocs response",
+      "timestamp": "2026-02-17T12:28:16.552078"
+    },
+    {
+      "beacon": "Discovered DecoyDoc via API: HR Review (ID: 1771307385788)",
+      "timestamp": "2026-02-17T12:28:18.665471"
+    },
+    {
+      "beacon": "Downloaded HR Review.docx - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:18.834690"
+    },
+    {
+      "beacon": "Downloaded HR Review.json - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:18.852669"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:22.425575"
+    },
+    {
+      "beacon": "Downloaded HR Review.txt - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.449364"
+    },
+    {
+      "beacon": "Discovered DecoyDoc via API: Financial Document (ID: 1771308670528)",
+      "timestamp": "2026-02-17T12:28:22.451362"
+    },
+    {
+      "beacon": "Downloaded Financial Document.docx - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.507950"
+    },
+    {
+      "beacon": "Downloaded Financial Document.json - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.538007"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
+      "timestamp": "2026-02-17T12:28:22.731388"
+    },
+    {
+      "beacon": "Downloaded Financial Document.txt - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.748785"
+    },
+    {
+      "beacon": "Discovered DecoyDoc via API: Sales Document (ID: 1771309201119)",
+      "timestamp": "2026-02-17T12:28:22.750970"
+    },
+    {
+      "beacon": "Downloaded Sales Document.docx - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.811598"
+    },
+    {
+      "beacon": "Downloaded Sales Document.json - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:22.826747"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:23.107988"
+    },
+    {
+      "beacon": "Downloaded Sales Document.txt - Access logged in honeypot",
+      "timestamp": "2026-02-17T12:28:23.128000"
+    },
+    {
       "beacon": "Flask ML model triggered by Teleport",
-      "timestamp": "2026-02-16T23:48:34.085867"
+      "timestamp": "2026-02-17T12:28:39.598718"
     },
     {
       "beacon": "Flask ML model triggered by Fast Linear",
-      "timestamp": "2026-02-16T23:48:36.175727"
-    }
-  ],
-  "decoy_responses": [
+      "timestamp": "2026-02-17T12:28:41.718749"
+    },
     {
-      "decoy": "Decoy response: {'status': 'access_denied', 'tracking_id': 'bec-1771265907'}",
-      "timestamp": "2026-02-16T23:48:27.853711"
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:51.690410"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:51.937948"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
+      "timestamp": "2026-02-17T12:28:52.127076"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
+      "timestamp": "2026-02-17T12:28:52.315574"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:52.475913"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
+      "timestamp": "2026-02-17T12:28:52.652099"
     }
   ],
+  "decoy_responses": [],
   "sensitive_data": [
     {
       "source": "/api/config",

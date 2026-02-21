@@ -1,0 +1,18 @@
+{
+  "id": "1771308670528",
+  "uuid": "da9ac66c-6c0c-45e5-9e90-fef943375bd1",
+  "title": "Financial Document",
+  "template": "q3_financial",
+  "createdAt": "2026-02-17T06:12:01.531Z",
+  "status": "generated",
+  "filePath": "1771308670528.json",
+  "documentPath": "1771308670528_document.docx",
+  "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "accessCount": 0,
+  "beacon": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+  "beacon_urls": {
+    "beacon": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+    "fonts": "https://fyp-backend-98o5.onrender.com/fonts/roboto-regular.woff2?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=03cc25a5",
+    "assets": "https://fyp-backend-98o5.onrender.com/assets/media/icon.svg?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=467503c8"
+  }
+}

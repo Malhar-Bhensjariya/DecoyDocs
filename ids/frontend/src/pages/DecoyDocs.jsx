@@ -7,6 +7,7 @@ const DecoyDocs = () => {
   const [decoyDocs, setDecoyDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creatingDoc, setCreatingDoc] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocTemplate, setNewDocTemplate] = useState('generic_report');
@@ -14,6 +15,15 @@ const DecoyDocs = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}?${mm}/${yyyy}`;
+  };
 
   useEffect(() => {
     fetchDecoyDocs();
@@ -35,24 +45,48 @@ const DecoyDocs = () => {
   const createDecoyDoc = async (e) => {
     e.preventDefault();
     setCreatingDoc(true);
-    try {
-      await axios.post('http://localhost:3001/api/decoydocs/create', {
-        title: newDocTitle,
-        template: newDocTemplate
-      }, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
 
-      setNewDocTitle('');
-      setNewDocTemplate('generic_report');
-      setShowCreateForm(false);
-      fetchDecoyDocs(); // Refresh list
-    } catch (error) {
-      console.error('Error creating DecoyDoc:', error);
-      alert('Failed to create document: ' + (error.response?.data?.error || error.message));
-    } finally {
-      setCreatingDoc(false);
+    const maxAttempts = 2;
+    let attempt = 0;
+    let created = false;
+
+    while (attempt < maxAttempts && !created) {
+      try {
+        attempt += 1;
+        await axios.post('http://localhost:3001/api/decoydocs/create', {
+          title: newDocTitle,
+          template: newDocTemplate
+        }, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        });
+
+        // success
+        setNewDocTitle('');
+        setNewDocTemplate('generic_report');
+        setShowCreateForm(false);
+        fetchDecoyDocs(); // Refresh list
+        created = true;
+        break;
+      } catch (error) {
+        console.error(`Error creating DecoyDoc (attempt ${attempt}):`, error);
+
+        // Network-level failure -> retry once
+        if (!error.response) {
+          if (attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 300 * attempt));
+            continue;
+          }
+          alert('Network error — could not reach the server. Please try again.');
+          break;
+        }
+
+        // Server returned an error (show message)
+        alert('Failed to create document: ' + (error.response?.data?.error || error.message));
+        break;
+      }
     }
+
+    setCreatingDoc(false);
   };
 
   const viewDecoyDoc = async (docId) => {
@@ -96,13 +130,51 @@ const DecoyDocs = () => {
       return;
     }
 
-    try {
-      await axios.delete(`http://localhost:3001/api/decoydocs/${docId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      fetchDecoyDocs(); // Refresh list
-    } catch (error) {
-      console.error('Error deleting DecoyDoc:', error);
+    setDeletingId(docId);
+    const maxAttempts = 2;
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      try {
+        await axios.delete(`http://localhost:3001/api/decoydocs/${docId}`, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        });
+
+        setDeletingId(null);
+        fetchDecoyDocs(); // Refresh list
+        return;
+      } catch (error) {
+        attempt += 1;
+
+        // Network-level failure (connection refused / timeout) -> retry once
+        if (!error.response) {
+          console.warn(`Network error deleting DecoyDoc ${docId}, attempt=${attempt}`);
+          if (attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 400 * attempt));
+            continue; // retry
+          }
+
+          alert('Network error — could not reach the server. Please try again.');
+          setDeletingId(null);
+          return;
+        }
+
+        const status = error.response?.status;
+        const serverMsg = error.response?.data?.error || error.message;
+
+        if (status === 404) {
+          // Already gone — refresh list and notify
+          alert('Document not found (already removed). Refreshing list.');
+          setDeletingId(null);
+          fetchDecoyDocs();
+          return;
+        }
+
+        // Other server error — show message and stop
+        alert('Failed to delete document: ' + serverMsg);
+        setDeletingId(null);
+        return;
+      }
     }
   };
 
@@ -359,7 +431,7 @@ const DecoyDocs = () => {
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Template:</span> {doc.template} |
-                            <span className="font-medium ml-2">Created:</span> {new Date(doc.createdAt).toLocaleDateString()} |
+                            <span className="font-medium ml-2">Created:</span> {formatDate(doc.createdAt)} |
                             <span className="font-medium ml-2">Access Count:</span> {doc.accessCount || 0}
                           </p>
                         </div>
@@ -387,12 +459,25 @@ const DecoyDocs = () => {
                           </button>
                           <button
                             onClick={() => deleteDecoyDoc(doc.id)}
-                            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all duration-200 text-sm font-medium flex items-center"
+                            disabled={deletingId === doc.id}
+                            className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium flex items-center ${deletingId === doc.id ? 'bg-red-200 text-red-400 cursor-not-allowed opacity-60' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
                           >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
+                            {deletingId === doc.id ? (
+                              <>
+                                <svg className="animate-spin w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                              </>
+                            )}
                           </button>
                         </div>
                       )}
@@ -423,7 +508,7 @@ const DecoyDocs = () => {
               </div>
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  <strong>Created:</strong> {new Date(selectedDoc.createdAt).toLocaleString()}
+                  <strong>Created:</strong> {formatDate(selectedDoc.createdAt)}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Status:</strong> {selectedDoc.status}

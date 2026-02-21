@@ -9,6 +9,15 @@ const Dashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [decoyDocs, setDecoyDocs] = useState([]);
 
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}?${mm}/${yyyy}`;
+  };
+
   useEffect(() => {
     fetchAlerts();
     if (user.role === 'admin') {
@@ -331,7 +340,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-xs text-gray-600 space-y-1">
                   <p><strong>Size:</strong> {doc.size}</p>
-                  <p><strong>Modified:</strong> {new Date(doc.lastModified).toLocaleDateString()}</p>
+                  <p><strong>Modified:</strong> {formatDate(doc.lastModified)}</p>
                 </div>
                 <div className="mt-4 flex space-x-2">
                   <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Download</button>
