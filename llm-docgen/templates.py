@@ -36,6 +36,8 @@ TEMPLATES = {
             "Produce a clear, realistic, and believable document with a short executive summary, "
             "two or three sections with headings, a small table-like bulleted summary of figures (if relevant), "
             "and a concluding recommendation. Use realistic names, dates (recent year), and monetary figures where appropriate. "
+            "Use Indian locale: prefer Indian city/company names, format dates as DD/MM/YYYY, and use Indian currency (INR, use the rupee symbol ₹). "
+            "When presenting large values, prefer lakhs/crores where natural."
         ),
         "title": "Corporate Strategy and Growth Report - Q1 2026"
     },
@@ -45,6 +47,7 @@ TEMPLATES = {
             "Create an internal HR memo titled '2025 Employee Bonuses' describing bonus allocation by department, "
             "criteria used, a short breakdown of bonus ranges, and an executive summary for managers. "
             "Include believable reasons for allocations and short example numbers. "
+            "Use Indian locale: amounts in INR (₹), dates DD/MM/YYYY, and Indian names/locations."
         ),
         "title": "2025 Employee Bonuses"
     },
@@ -53,6 +56,7 @@ TEMPLATES = {
         "prompt": (
             "Create a Q3 financial summary report for a mid-sized tech company. Include revenue, expenses, YoY comparisons, "
             "brief commentary on key drivers (product launches, channel performance), and a short outlook for Q4. "
+            "Use Indian locale: currency in INR (₹), dates as DD/MM/YYYY, and examples relevant to India (cities, channels)."
         ),
         "title": "Q3 2025 Financial Summary"
     },
@@ -61,6 +65,7 @@ TEMPLATES = {
         "prompt": (
             "Write a short HR performance review template for an employee in Software Engineering. Include strengths, areas for improvement, "
             "goals for next quarter, and suggested training. "
+            "Use Indian context where appropriate (local training providers, India date formats)."
         ),
         "title": "Software Engineering - HR Review"
     },
@@ -68,6 +73,7 @@ TEMPLATES = {
     "sales_pipeline": {
         "prompt": (
             "Create a sales pipeline status report for the week, listing top 5 deals, expected close dates, potential revenue, and risks. "
+            "Use Indian locale: present monetary amounts in INR (₹), dates DD/MM/YYYY, and use Indian company/location examples."
         ),
         "title": "Weekly Sales Pipeline Report"
     }

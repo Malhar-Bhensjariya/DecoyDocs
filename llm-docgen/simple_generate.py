@@ -37,8 +37,15 @@ TEMPLATE_PROMPTS = {k: v["prompt"] for k, v in TEMPLATES.items()}
 
 def generate_docx_from_gemini(title: str, template: str, output_path: str):
     """Generate DOCX using Gemini content."""
-    prompt = TEMPLATE_PROMPTS.get(template, f"Write professional content about {title}.")
-    prompt = prompt.format(title=title)
+    base_prompt = (
+        "You are a professional business writer creating a clean internal document. "
+        "Write using headings, paragraphs, and list items only. "
+        "Do not use markdown horizontal rules or raw divider lines such as '---', '***', or '___'. "
+        "Do not include page dividers or raw markdown separators in the response. "
+        "Use realistic Indian locale details when requested by the template. "
+    )
+    prompt_body = TEMPLATE_PROMPTS.get(template, f"Write professional content about {title}.")
+    prompt = f"{base_prompt}\n\n{prompt_body.format(title=title)}"
     
     # Call Gemini
     response = client.models.generate_content(
@@ -50,7 +57,27 @@ def generate_docx_from_gemini(title: str, template: str, output_path: str):
     print(f"DEBUG: Raw Gemini response length: {len(content)}", file=sys.stderr)
     print(f"DEBUG: Raw Gemini response end: {repr(content[-200:])}", file=sys.stderr)
     
+    # Post-process to prefer Indian locale/currency as a safety-net in case the model
+    # used non-Indian examples. Replace common USD markers with INR/rupee symbol.
     content_text = content
+    try:
+        # Don't overwrite if rupee symbol already present
+        if '₹' not in content_text:
+            # Replace $ amounts with ₹, and common currency words
+            content_text = content_text.replace('USD', 'INR').replace('usd', 'INR')
+            content_text = content_text.replace('$', '₹')
+            # Replace plural 'dollars' with 'rupees' (case-insensitive)
+            content_text = re.sub(r"\bdollars\b", 'rupees', content_text, flags=re.IGNORECASE)
+            content_text = re.sub(r"\bDollar\b", 'Rupee', content_text)
+    except Exception as e:
+        print(f"Locale post-processing skipped due to error: {e}", file=sys.stderr)
+
+    # Strip lines that consist solely of repeated hyphens/underscores/stars
+    # which markdown sometimes emits as page dividers ("---"). Replace them with a single blank line.
+    try:
+        content_text = re.sub(r'(?m)^[ \t]*[-_*]{3,}[ \t]*$', '\\n', content_text)
+    except Exception as e:
+        print(f"Divider stripping skipped due to error: {e}", file=sys.stderr)
     
     # Convert markdown to HTML then to DOCX
     print("Converting markdown to HTML...", file=sys.stderr)
@@ -61,27 +88,53 @@ def generate_docx_from_gemini(title: str, template: str, output_path: str):
         html = f"<pre>{content_text}</pre>"
         print("Falling back to plain text formatting", file=sys.stderr)
     
+    # Remove any HTML paragraphs that are just separators after markdown conversion.
+    html = re.sub(r'(?i)<p>\s*[-_*]{3,}\s*</p>', '', html)
+
     # Create DOCX
     doc = docx.Document()
     doc.add_heading(title, level=1)
-    
+
+    def is_separator_text(text: str) -> bool:
+        if not text:
+            return True
+        return bool(re.fullmatch(r'[\s\-\*_]{3,}', text))
+
     # Parse HTML and add to doc
     soup = BeautifulSoup(html, "html.parser")
-    for elem in soup.find_all(['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'blockquote']):
+    for elem in soup.find_all(['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'blockquote', 'hr']):
         if elem.name in ('h1', 'h2', 'h3'):
+            text = elem.get_text(strip=True)
+            if not text or is_separator_text(text):
+                continue
             level = int(elem.name[1])
-            doc.add_heading(elem.get_text(), level=level)
+            doc.add_heading(text, level=level)
         elif elem.name == 'p':
-            doc.add_paragraph(elem.get_text())
+            text = elem.get_text(strip=True)
+            if not text or is_separator_text(text):
+                continue
+            doc.add_paragraph(text)
         elif elem.name == 'ul':
             for li in elem.find_all('li', recursive=False):
-                doc.add_paragraph(li.get_text(), style='List Bullet')
+                text = li.get_text(strip=True)
+                if not text or is_separator_text(text):
+                    continue
+                doc.add_paragraph(text, style='List Bullet')
         elif elem.name == 'ol':
             for li in elem.find_all('li', recursive=False):
-                doc.add_paragraph(li.get_text(), style='List Number')
+                text = li.get_text(strip=True)
+                if not text or is_separator_text(text):
+                    continue
+                doc.add_paragraph(text, style='List Number')
         elif elem.name == 'blockquote':
-            p = doc.add_paragraph(elem.get_text())
+            text = elem.get_text(strip=True)
+            if not text or is_separator_text(text):
+                continue
+            p = doc.add_paragraph(text)
             p.style = 'Intense Quote'
+        elif elem.name == 'hr':
+            # ignore horizontal rules — they can render as long lines/pages in some viewers
+            continue
     
     doc.save(output_path)
 

@@ -112,6 +112,24 @@ router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
       fSync.mkdirSync(tempGenDir, { recursive: true });
     }
 
+    // Ensure child python process has GEMINI_API_KEY available: inherit from
+    // parent process or load from llm-docgen/.env if present.
+    let spawnEnv = { ...process.env };
+    if (!spawnEnv.GEMINI_API_KEY) {
+      try {
+        const envPath = path.join(__dirname, '../../../../llm-docgen/.env');
+        if (fSync.existsSync(envPath)) {
+          const envContent = fSync.readFileSync(envPath, 'utf8');
+          const m = envContent.match(/^\s*GEMINI_API_KEY\s*=\s*(.+)\s*$/m);
+          if (m && m[1]) {
+            spawnEnv.GEMINI_API_KEY = m[1].trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
+          }
+        }
+      } catch (e) {
+        // ignore and continue
+      }
+    }
+
     const generateProcess = spawn(pythonCmd, [
       generatorPath,
       title,
@@ -119,7 +137,8 @@ router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
       tempGenDir
     ], {
       cwd: path.join(__dirname, '../../../../llm-docgen/'),
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: spawnEnv
     });
 
     let generateOutput = '';
@@ -204,7 +223,7 @@ router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
 
       // HoneyUUID
       await new Promise((resolve, reject) => {
-        const p = spawn(pythonCmd, [metadataCli, storageDocPath, storageDocPath, 'HoneyUUID', honeyUuid]);
+        const p = spawn(pythonCmd, [metadataCli, storageDocPath, storageDocPath, 'HoneyUUID', honeyUuid], { env: spawnEnv });
         let err = '';
         p.stderr.on('data', d => { err += d.toString(); });
         p.on('error', (e) => reject(e));
@@ -214,7 +233,7 @@ router.post('/create', authenticateToken, requireAdmin, async (req, res) => {
 
       // BeaconURL
       await new Promise((resolve, reject) => {
-        const p2 = spawn(pythonCmd, [metadataCli, storageDocPath, storageDocPath, 'BeaconURL', beaconUrls.beacon]);
+        const p2 = spawn(pythonCmd, [metadataCli, storageDocPath, storageDocPath, 'BeaconURL', beaconUrls.beacon], { env: spawnEnv });
         let err = '';
         p2.stderr.on('data', d => { err += d.toString(); });
         p2.on('error', (e) => reject(e));
