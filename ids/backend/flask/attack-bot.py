@@ -11,8 +11,11 @@ Automated attack bot designed to:
 """
 
 import os
+import io
+import re
 import json
 import time
+import zipfile
 import requests
 from pathlib import Path
 from selenium import webdriver
@@ -23,6 +26,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from datetime import datetime
 import traceback
+from urllib.parse import urlparse, parse_qs
 
 # Configuration
 # Resolve paths relative to this script
@@ -34,6 +38,7 @@ TARGET_URL = "http://localhost:5173"
 API_BASE = "http://localhost:3001"
 FLASK_BASE = "http://localhost:5000"
 BEACON_BASE = "https://fyp-backend-98o5.onrender.com"
+DASHBOARD_API = "https://fyp-backend-98o5.onrender.com/api/signals/"
 DEMO_PAGE = f"{TARGET_URL}/demo"
 ATTACK_LOG = "attack_log.json"
 OUT_DIR = PROJECT_ROOT / "out"
@@ -54,9 +59,64 @@ class AttackBot:
         self.session = requests.Session()
         self.driver = None
         self.authenticated = False
+        self.max_beacons = 50
+        self.max_hidden_beacon_extractions = 12
+        self.max_document_downloads = 2
+        self.max_attack_logs = 75
         
+    def can_fire_more_beacons(self):
+        return len(self.results["beacons_triggered"]) < self.max_beacons
+
+    def should_log_attack(self):
+        return len(self.results["attacks"]) < self.max_attack_logs
+
+    def build_signal_payload(self, bot_type, attack_vector, endpoint, success, details):
+        parsed = urlparse(endpoint)
+        if parsed.scheme and parsed.netloc:
+            target_endpoint = parsed.path or endpoint
+            query = parse_qs(parsed.query)
+            target_resource = query.get("resource_id", [None])[0]
+            if not target_resource:
+                target_resource = parsed.path.strip("/").split("/")[-1] if parsed.path else endpoint
+        else:
+            target_endpoint = endpoint
+            target_resource = endpoint.strip("/").split("/")[-1] if "/" in endpoint else endpoint
+
+        return {
+            "bot_type": bot_type,
+            "attack_vector": attack_vector,
+            "source_ip": "127.0.0.1",
+            "target_resource": target_resource,
+            "target_endpoint": target_endpoint,
+            "success": success,
+            "timestamp": datetime.now().isoformat() + "Z",
+            "details": {
+                "user_agent": "DecoyDocs-AttackBot/1.0",
+                "behavior_indicators": [attack_vector],
+                "request_headers": {"X-Scanner": "true"},
+                "custom_metadata": {
+                    "details": details,
+                    "tool": "attack-bot.py"
+                }
+            }
+        }
+
+    def send_bot_signal(self, bot_type, attack_vector, endpoint, success, details):
+        try:
+            payload = self.build_signal_payload(bot_type, attack_vector, endpoint, success, details)
+            print(f"    [DEBUG] Sending signal to {DASHBOARD_API}: {payload}")
+            response = requests.post(DASHBOARD_API, json=payload, timeout=5)
+            print(f"    [DEBUG] Dashboard response: {response.status_code} - {response.text}")
+            if response.status_code in (200, 201):
+                print(f"    [+] Signal sent to dashboard")
+            else:
+                print(f"    [-] Failed to send signal: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"    [-] Error sending signal: {e}")
+
     def log_attack(self, attack_type, endpoint, success, details):
-        """Log an attack attempt"""
+        """Log an attack attempt and send signal to dashboard"""
+        # Log locally
         self.results["attacks"].append({
             "type": attack_type,
             "endpoint": endpoint,
@@ -66,13 +126,79 @@ class AttackBot:
         })
         print(f"[{attack_type}] {endpoint}: {details}")
 
-    def log_beacon(self, beacon_info):
-        """Log detected beacon"""
-        self.results["beacons_triggered"].append({
-            "beacon": beacon_info,
-            "timestamp": datetime.now().isoformat()
-        })
-        print(f"[BEACON] {beacon_info}")
+        # Send signal to dashboard
+        bot_type_map = {
+            "BOT_DETECTION": "automation",
+            "UNAUTHORIZED_ACCESS": "scanner",
+            "STATIC_THEFT": "downloader",
+            "DECOYDOC_ENUM": "enumerator",
+            "DECOYDOC_DOWNLOAD": "scanner",
+            "SQL_INJECTION": "injector",
+            "XSS": "injector",
+            "BEACON_TRIGGER": "scanner",
+            "HIDDEN_BEACON": "scanner",
+            "METADATA_EXTRACTION": "data_exfiltrator",
+            "STORAGE_BEACON": "storage_scanner",
+            "STORAGE_BEACON_READ": "storage_scanner"
+        }
+
+        attack_vector_map = {
+            "BOT_DETECTION": "bot_detection",
+            "UNAUTHORIZED_ACCESS": "endpoint_scan",
+            "STATIC_THEFT": "static_download",
+            "DECOYDOC_ENUM": "document_enum",
+            "DECOYDOC_DOWNLOAD": "document_download",
+            "SQL_INJECTION": "sql_injection",
+            "XSS": "xss",
+            "BEACON_TRIGGER": "document_download",
+            "HIDDEN_BEACON": "document_download",
+            "METADATA_EXTRACTION": "metadata_extraction",
+            "STORAGE_BEACON": "storage_beacon",
+            "STORAGE_BEACON_READ": "storage_beacon"
+        }
+
+        if attack_type.startswith("ML_PREDICTION_"):
+            bot_type = "ml_detector"
+            attack_vector = "ml_prediction"
+        else:
+            bot_type = bot_type_map.get(attack_type, "scanner")
+            attack_vector = attack_vector_map.get(attack_type, attack_type.lower())
+
+        self.send_bot_signal(bot_type, attack_vector, endpoint, success, details)
+
+    def log_beacon(self, beacon_info, is_hidden=False):
+        """Log detected beacon and send a bot signal for beacon activity."""
+        # Hidden beacons don't count towards the beacon limit
+        if is_hidden:
+            self.results["beacons_triggered"].append({
+                "beacon": beacon_info,
+                "timestamp": datetime.now().isoformat()
+            })
+            print(f"[BEACON] {beacon_info}")
+        elif not self.can_fire_more_beacons():
+            print(f"[BEACON] Skipping additional beacon logging (limit reached): {beacon_info}")
+            return
+        else:
+            self.results["beacons_triggered"].append({
+                "beacon": beacon_info,
+                "timestamp": datetime.now().isoformat()
+            })
+            print(f"[BEACON] {beacon_info}")
+
+        # If the beacon info contains a URL, fire a dashboard signal for it too.
+        if beacon_info.startswith("http"):
+            self.send_bot_signal(
+                bot_type="scanner",
+                attack_vector="document_download",
+                endpoint=beacon_info,
+                success=True,
+                details={
+                    "user_agent": "DecoyDocs-AttackBot/1.0",
+                    "behavior_indicators": ["beacon_trigger"],
+                    "request_headers": {"X-Scanner": "true"},
+                    "custom_metadata": {"tool": "attack-bot.py", "note": "Beacon URL detected"}
+                }
+            )
 
     def log_decoy(self, decoy_info):
         """Log decoy response"""
@@ -426,6 +552,14 @@ class AttackBot:
                     with open(filename, 'wb') as f:
                         f.write(response.content)
                     print(f"    [+] Saved beacon-embedded file: {filename}")
+
+                    # Extract embedded URLs from downloaded content and fire them as secondary beacons
+                    embedded_urls = self.extract_urls_from_download(response, fmt)
+                    for embedded_url in embedded_urls:
+                        success = self.fire_beacon(embedded_url)
+                        self.log_beacon(f"Hidden beacon extracted: {embedded_url} (from {title}.{fmt})", is_hidden=True)
+                        self.log_attack("HIDDEN_BEACON", embedded_url, success,
+                                      f"Extracted from {title}.{fmt}")
                 elif response.status_code == 401:
                     self.log_attack("DECOYDOC_DOWNLOAD", f"{title}.{fmt}", False,
                                   f"Status 401 (Unauthorized)")
@@ -435,6 +569,62 @@ class AttackBot:
                     
         except Exception as e:
             self.log_attack("DECOYDOC_DOWNLOAD", title, False, str(e))
+
+    def extract_urls_from_json(self, obj):
+        """Recursively extract URLs from JSON object values."""
+        urls = []
+        if isinstance(obj, dict):
+            for value in obj.values():
+                urls.extend(self.extract_urls_from_json(value))
+        elif isinstance(obj, list):
+            for item in obj:
+                urls.extend(self.extract_urls_from_json(item))
+        elif isinstance(obj, str):
+            urls.extend(self.extract_urls_from_text(obj))
+        return urls
+
+    def extract_urls_from_text(self, text):
+        """Return all http/https and relative src/href URLs found in text."""
+        urls = []
+        urls.extend(re.findall(r'https?://[^\s"\'<>]+', text))
+        urls.extend(re.findall(r'src=["\'](/[^"\']+)["\']', text))
+        urls.extend(re.findall(r'href=["\'](/[^"\']+)["\']', text))
+        return urls
+
+    def extract_urls_from_docx_bytes(self, data):
+        """Extract URLs from DOCX zipped XML and relationship files."""
+        urls = []
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+                for name in z.namelist():
+                    if name.endswith('.xml') or name.endswith('.rels'):
+                        try:
+                            content = z.read(name).decode('utf-8', errors='ignore')
+                            urls.extend(self.extract_urls_from_text(content))
+                        except Exception:
+                            continue
+        except zipfile.BadZipFile:
+            # Fallback to raw text scanning
+            urls.extend(self.extract_urls_from_text(data.decode('utf-8', errors='ignore')))
+        return urls
+
+    def extract_urls_from_download(self, response, fmt):
+        """Extract embedded URLs from downloaded document contents."""
+        urls = []
+        if fmt == 'json':
+            try:
+                data = response.json()
+                urls.extend(self.extract_urls_from_json(data))
+            except Exception:
+                urls.extend(self.extract_urls_from_text(response.text))
+        elif fmt == 'docx':
+            urls.extend(self.extract_urls_from_docx_bytes(response.content))
+        else:  # txt or unknown
+            urls.extend(self.extract_urls_from_text(response.text))
+
+        # Deduplicate and limit to prevent spam
+        urls = list(dict.fromkeys(urls))[:self.max_hidden_beacon_extractions]
+        return urls
 
     def scan_for_vulnerabilities(self):
         """
@@ -533,6 +723,10 @@ class AttackBot:
                 url = url.replace("http://localhost:3001", BEACON_BASE)
 
             print(f"    [>] Firing beacon: {url}")
+            if not self.can_fire_more_beacons():
+                print(f"    [>] Beacon skipped because max beacon limit reached: {url}")
+                return False
+
             response = self.session.get(url, timeout=5, allow_redirects=False)
             self.log_beacon(f"Beacon fired: {url} (Status: {response.status_code})")
             return response.status_code == 200
@@ -632,6 +826,7 @@ class AttackBot:
                         if "beacon" in key.lower() and isinstance(value, str) and value.startswith("http"):
                             success = self.fire_beacon(value)
                             beacons_fired += 1
+                            self.log_beacon(f"Hidden beacon from metadata: {value} (field: {key}, doc: {doc_title})", is_hidden=True)
                             self.log_attack("HIDDEN_BEACON", value, success,
                                           f"Field: {key} (Document: {doc_title})")
                             

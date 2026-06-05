@@ -9,6 +9,8 @@ import os
 import sys
 import json
 import uuid
+import re
+import io
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -29,14 +31,9 @@ if not api_key:
     raise ValueError("Missing GEMINI_API_KEY in environment or .env file")
 
 client = genai.Client(api_key=api_key)
+from templates import TEMPLATES
 
-TEMPLATE_PROMPTS = {
-    "generic_report": "Generate a professional generic business report about {title}. Include executive summary, key findings, and recommendations.",
-    "employee_bonus": "Generate an HR document about {title} regarding employee bonuses. Include department breakdown, bonus distribution, and payment schedule.",
-    "q3_financial": "Generate a financial report titled {title} for Q3. Include revenue, expenses, profit margins, and trend analysis.",
-    "hr_review": "Generate an HR review document titled {title}. Include performance metrics, feedback, and development plans.",
-    "sales_pipeline": "Generate a sales document about {title}. Include sales opportunities, pipeline status, and forecast.",
-}
+TEMPLATE_PROMPTS = {k: v["prompt"] for k, v in TEMPLATES.items()}
 
 def generate_docx_from_gemini(title: str, template: str, output_path: str):
     """Generate DOCX using Gemini content."""
@@ -50,9 +47,19 @@ def generate_docx_from_gemini(title: str, template: str, output_path: str):
     )
     
     content = response.text
+    print(f"DEBUG: Raw Gemini response length: {len(content)}", file=sys.stderr)
+    print(f"DEBUG: Raw Gemini response end: {repr(content[-200:])}", file=sys.stderr)
+    
+    content_text = content
     
     # Convert markdown to HTML then to DOCX
-    html = markdown2.markdown(content, extras=['fenced-code-blocks', 'tables'])
+    print("Converting markdown to HTML...", file=sys.stderr)
+    try:
+        html = markdown2.markdown(content_text, extras=['fenced-code-blocks', 'tables'])
+    except Exception as e:
+        print(f"Markdown conversion failed: {e}", file=sys.stderr)
+        html = f"<pre>{content_text}</pre>"
+        print("Falling back to plain text formatting", file=sys.stderr)
     
     # Create DOCX
     doc = docx.Document()

@@ -1,285 +1,812 @@
 {
-  "timestamp": "2026-02-17T12:27:01.719088",
+  "timestamp": "2026-04-18T11:26:05.347439",
   "attacks": [
     {
       "type": "BOT_DETECTION",
       "endpoint": "http://localhost:5173/demo",
       "success": false,
-      "details": "Message: move target out of bounds\n  (Session info: chrome=145.0.7632.75)\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t0x7ff70ed54455\n\t0x7ff70ed544b0\n\t0x7ff70eaed286\n\t0x7ff70eba1026\n\t0x7ff70eb717ca\n\t0x7ff70eb95728\n\t0x7ff70eb38e38\n\t0x7ff70eb39d23\n\t0x7ff70f023b60\n\t0x7ff70f01e3e8\n\t0x7ff70f03e75a\n\t0x7ff70ed70805\n\t0x7ff70ed797ac\n\t0x7ff70ed5d7b4\n\t0x7ff70ed5d966\n\t0x7ff70ed43477\n\t0x7ffbaf26e8d7\n\t0x7ffbb116c53c\n",
-      "timestamp": "2026-02-17T12:28:15.493894"
+      "details": "Message: move target out of bounds\n  (Session info: chrome=147.0.7727.57)\nStacktrace:\n\tchromedriver!GetHandleVerifier [0x7ff7284e0245+146d5]\n\tchromedriver!GetHandleVerifier [0x7ff7284e02b0+14740]\n\tchromedriver!(No symbol) [0x7ff72824d5b6]\n\tchromedriver!(No symbol) [0x7ff72830019c]\n\tchromedriver!(No symbol) [0x7ff7282cff6a]\n\tchromedriver!(No symbol) [0x7ff7282f4818]\n\tchromedriver!(No symbol) [0x7ff728299018]\n\tchromedriver!(No symbol) [0x7ff728299f03]\n\tchromedriver!GetHandleVerifier [0x7ff7287f58f9+329d89]\n\tchromedriver!GetHandleVerifier [0x7ff7287efe46+3242d6]\n\tchromedriver!GetHandleVerifier [0x7ff7288130b2+347542]\n\tchromedriver!GetHandleVerifier [0x7ff7284fd3d5+31865]\n\tchromedriver!GetHandleVerifier [0x7ff72850600c+3a49c]\n\tchromedriver!GetHandleVerifier [0x7ff7284e9634+1dac4]\n\tchromedriver!GetHandleVerifier [0x7ff7284e97e6+1dc76]\n\tchromedriver!GetHandleVerifier [0x7ff7284ce2f7+2787]\n\tKERNEL32!BaseThreadInitThunk [0x7ff8b75ee8d7+17]\n\tntdll!RtlUserThreadStart [0x7ff8b912c40c+2c]\n",
+      "timestamp": "2026-04-18T11:27:30.248777"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/decoydocs",
       "success": true,
       "details": "Status 200 - List all honeypot documents - VULNERABLE!",
-      "timestamp": "2026-02-17T12:28:16.550801"
+      "timestamp": "2026-04-18T11:27:32.937779"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/decoydocs",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-17T12:28:16.563607"
+      "timestamp": "2026-04-18T11:27:34.136694"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/dashboard",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-17T12:28:16.570693"
+      "timestamp": "2026-04-18T11:27:35.452247"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/auth/admin",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-17T12:28:16.582998"
+      "timestamp": "2026-04-18T11:27:36.564289"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/api/users",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-17T12:28:16.592132"
+      "timestamp": "2026-04-18T11:27:37.809851"
     },
     {
       "type": "UNAUTHORIZED_ACCESS",
       "endpoint": "/admin",
       "success": false,
       "details": "Status 404",
-      "timestamp": "2026-02-17T12:28:16.600148"
+      "timestamp": "2026-04-18T11:27:38.832455"
     },
     {
       "type": "STATIC_THEFT",
       "endpoint": "/api/config",
       "success": true,
       "details": "Retrieved 124 bytes (Simulated)",
-      "timestamp": "2026-02-17T12:28:17.616112"
+      "timestamp": "2026-04-18T11:27:40.782640"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "HR Review.docx",
+      "endpoint": "HR Report.docx",
       "success": true,
-      "details": "Downloaded 39865 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:18.834690"
+      "details": "Downloaded 38744 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:27:44.077656"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/content-types",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:45.230926"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:46.495060"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:47.575725"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:48.599870"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:49.892785"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:51.092703"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:52.454728"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/elements/1.1/",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:54.936587"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/terms/",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:56.513804"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/dcmitype/",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:27:58.692531"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://www.w3.org/2001/XMLSchema-instance",
+      "success": false,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:28:00.494221"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&amp;nonce=f5a36023",
+      "success": true,
+      "details": "Extracted from HR Report.docx",
+      "timestamp": "2026-04-18T11:28:02.846287"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "HR Review.json",
+      "endpoint": "HR Report.json",
       "success": true,
-      "details": "Downloaded 964 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:18.852669"
+      "details": "Downloaded 960 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:04.226987"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023",
+      "success": true,
+      "details": "Extracted from HR Report.json",
+      "timestamp": "2026-04-18T11:28:05.611630"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/fonts/roboto-regular.woff2?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=c60f0549",
+      "success": true,
+      "details": "Extracted from HR Report.json",
+      "timestamp": "2026-04-18T11:28:07.148126"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/assets/media/logo.png?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=b41e471a",
+      "success": true,
+      "details": "Extracted from HR Report.json",
+      "timestamp": "2026-04-18T11:28:08.422102"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "HR Review.txt",
+      "endpoint": "HR Report.txt",
       "success": true,
-      "details": "Downloaded 39865 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.448078"
+      "details": "Downloaded 38744 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:10.126436"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Financial Document.docx",
+      "endpoint": "Financial Report.docx",
       "success": true,
-      "details": "Downloaded 38578 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.506963"
+      "details": "Downloaded 39545 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:11.422788"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/content-types",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:12.636342"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:14.058403"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:15.440484"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:16.721460"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:18.329824"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:19.627273"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:20.884787"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/elements/1.1/",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:22.456417"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/terms/",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:23.966282"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/dcmitype/",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:25.537939"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://www.w3.org/2001/XMLSchema-instance",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:27.096037"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&amp;nonce=cb26d605",
+      "success": false,
+      "details": "Extracted from Financial Report.docx",
+      "timestamp": "2026-04-18T11:28:28.653654"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Financial Document.json",
+      "endpoint": "Financial Report.json",
       "success": true,
-      "details": "Downloaded 972 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.535191"
+      "details": "Downloaded 971 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:30.129043"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=cb26d605",
+      "success": false,
+      "details": "Extracted from Financial Report.json",
+      "timestamp": "2026-04-18T11:28:31.473344"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/fonts/inter-regular.woff2?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=f2a10b55",
+      "success": false,
+      "details": "Extracted from Financial Report.json",
+      "timestamp": "2026-04-18T11:28:33.158316"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/assets/media/avatar.png?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=02a63290",
+      "success": false,
+      "details": "Extracted from Financial Report.json",
+      "timestamp": "2026-04-18T11:28:34.495261"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Financial Document.txt",
+      "endpoint": "Financial Report.txt",
       "success": true,
-      "details": "Downloaded 38578 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.748785"
+      "details": "Downloaded 39545 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:36.048937"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Sales Document.docx",
+      "endpoint": "HR2.docx",
       "success": true,
-      "details": "Downloaded 40551 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.811598"
+      "details": "Downloaded 38854 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:37.824437"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/content-types",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:39.608799"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:41.448701"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:43.321423"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:45.188725"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:46.823644"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:48.641998"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:49.925864"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/elements/1.1/",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:51.181040"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/terms/",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:52.707100"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://purl.org/dc/dcmitype/",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:54.240549"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "http://www.w3.org/2001/XMLSchema-instance",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:55.822962"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&amp;nonce=6e184a4d",
+      "success": false,
+      "details": "Extracted from HR2.docx",
+      "timestamp": "2026-04-18T11:28:57.490181"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Sales Document.json",
+      "endpoint": "HR2.json",
       "success": true,
-      "details": "Downloaded 972 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:22.825749"
+      "details": "Downloaded 958 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:28:59.259718"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6e184a4d",
+      "success": false,
+      "details": "Extracted from HR2.json",
+      "timestamp": "2026-04-18T11:29:00.630555"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/fonts/opensans-regular.woff2?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=64061f13",
+      "success": false,
+      "details": "Extracted from HR2.json",
+      "timestamp": "2026-04-18T11:29:02.289743"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/assets/media/banner.jpg?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6d91f79d",
+      "success": false,
+      "details": "Extracted from HR2.json",
+      "timestamp": "2026-04-18T11:29:03.964074"
     },
     {
       "type": "DECOYDOC_DOWNLOAD",
-      "endpoint": "Sales Document.txt",
+      "endpoint": "HR2.txt",
       "success": true,
-      "details": "Downloaded 40551 bytes - BEACON TRIGGERED",
-      "timestamp": "2026-02-17T12:28:23.127007"
+      "details": "Downloaded 38854 bytes - BEACON TRIGGERED",
+      "timestamp": "2026-04-18T11:29:05.312047"
     },
     {
       "type": "ML_PREDICTION_PERFECT_LINEAR",
       "endpoint": "/predict",
       "success": false,
       "details": "Prediction: {'prediction': 1, 'probability_human': 0.5357366800308228, 'result': 'Human'}",
-      "timestamp": "2026-02-17T12:28:37.518920"
+      "timestamp": "2026-04-18T11:29:21.096459"
     },
     {
       "type": "ML_PREDICTION_TELEPORT",
       "endpoint": "/predict",
       "success": true,
       "details": "Prediction: {'prediction': 0, 'probability_human': 0.18023107945919037, 'result': 'Bot'}",
-      "timestamp": "2026-02-17T12:28:39.594274"
+      "timestamp": "2026-04-18T11:29:24.962774"
     },
     {
       "type": "ML_PREDICTION_FAST_LINEAR",
       "endpoint": "/predict",
       "success": true,
       "details": "Prediction: {'prediction': 0, 'probability_human': 0.2135043889284134, 'result': 'Bot'}",
-      "timestamp": "2026-02-17T12:28:41.716744"
+      "timestamp": "2026-04-18T11:29:28.812248"
     },
     {
       "type": "STORAGE_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9",
-      "success": true,
-      "details": "Document: HR Review (ID: 1771307385788)",
-      "timestamp": "2026-02-17T12:28:51.691961"
-    },
-    {
-      "type": "HIDDEN_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9",
-      "success": true,
-      "details": "Field: beacon (Document: HR Review)",
-      "timestamp": "2026-02-17T12:28:51.937948"
-    },
-    {
-      "type": "STORAGE_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023",
       "success": false,
-      "details": "Document: Financial Document (ID: 1771308670528)",
-      "timestamp": "2026-02-17T12:28:52.128058"
+      "details": "Document: HR Report (ID: 1776448530048)",
+      "timestamp": "2026-04-18T11:29:50.158135"
     },
     {
       "type": "HIDDEN_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023",
       "success": false,
-      "details": "Field: beacon (Document: Financial Document)",
-      "timestamp": "2026-02-17T12:28:52.315574"
+      "details": "Field: beacon (Document: HR Report)",
+      "timestamp": "2026-04-18T11:29:52.269932"
     },
     {
       "type": "STORAGE_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
-      "success": true,
-      "details": "Document: Sales Document (ID: 1771309201119)",
-      "timestamp": "2026-02-17T12:28:52.476917"
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=cb26d605",
+      "success": false,
+      "details": "Document: Financial Report (ID: 1776448587267)",
+      "timestamp": "2026-04-18T11:29:53.528406"
     },
     {
       "type": "HIDDEN_BEACON",
-      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6",
-      "success": true,
-      "details": "Field: beacon (Document: Sales Document)",
-      "timestamp": "2026-02-17T12:28:52.652099"
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=cb26d605",
+      "success": false,
+      "details": "Field: beacon (Document: Financial Report)",
+      "timestamp": "2026-04-18T11:29:55.480779"
+    },
+    {
+      "type": "STORAGE_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6e184a4d",
+      "success": false,
+      "details": "Document: HR2 (ID: 1776491607284)",
+      "timestamp": "2026-04-18T11:29:57.075724"
+    },
+    {
+      "type": "HIDDEN_BEACON",
+      "endpoint": "https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6e184a4d",
+      "success": false,
+      "details": "Field: beacon (Document: HR2)",
+      "timestamp": "2026-04-18T11:29:58.657223"
     }
   ],
   "beacons_triggered": [
     {
       "beacon": "Beacon found in /api/decoydocs response",
-      "timestamp": "2026-02-17T12:28:16.552078"
+      "timestamp": "2026-04-18T11:27:34.088181"
     },
     {
-      "beacon": "Discovered DecoyDoc via API: HR Review (ID: 1771307385788)",
-      "timestamp": "2026-02-17T12:28:18.665471"
+      "beacon": "Discovered DecoyDoc via API: HR Report (ID: 1776448530048)",
+      "timestamp": "2026-04-18T11:27:43.942450"
     },
     {
-      "beacon": "Downloaded HR Review.docx - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:18.834690"
+      "beacon": "Downloaded HR Report.docx - Access logged in honeypot",
+      "timestamp": "2026-04-18T11:27:45.158458"
     },
     {
-      "beacon": "Downloaded HR Review.json - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:18.852669"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/content-types (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/content-types (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:45.228948"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:22.425575"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/content-types (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:45.230926"
     },
     {
-      "beacon": "Downloaded HR Review.txt - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.449364"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:46.495060"
     },
     {
-      "beacon": "Discovered DecoyDoc via API: Financial Document (ID: 1771308670528)",
-      "timestamp": "2026-02-17T12:28:22.451362"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:46.495060"
     },
     {
-      "beacon": "Downloaded Financial Document.docx - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.507950"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships/metadata/core-properties (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:47.574743"
     },
     {
-      "beacon": "Downloaded Financial Document.json - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.538007"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:47.575725"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
-      "timestamp": "2026-02-17T12:28:22.731388"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /officeDocument/2006/relationships/extended-properties (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:48.598871"
     },
     {
-      "beacon": "Downloaded Financial Document.txt - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.748785"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:48.599870"
     },
     {
-      "beacon": "Discovered DecoyDoc via API: Sales Document (ID: 1771309201119)",
-      "timestamp": "2026-02-17T12:28:22.750970"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /officeDocument/2006/relationships/officeDocument (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:49.892785"
     },
     {
-      "beacon": "Downloaded Sales Document.docx - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.811598"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:49.892785"
     },
     {
-      "beacon": "Downloaded Sales Document.json - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:22.826747"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships/metadata/thumbnail (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:51.091653"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:23.107988"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:51.091653"
     },
     {
-      "beacon": "Downloaded Sales Document.txt - Access logged in honeypot",
-      "timestamp": "2026-02-17T12:28:23.128000"
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/metadata/core-properties (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/metadata/core-properties (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:27:52.453727"
     },
     {
-      "beacon": "Flask ML model triggered by Teleport",
-      "timestamp": "2026-02-17T12:28:39.598718"
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/metadata/core-properties (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:52.454728"
     },
     {
-      "beacon": "Flask ML model triggered by Fast Linear",
-      "timestamp": "2026-02-17T12:28:41.718749"
+      "beacon": "Beacon fired: http://purl.org/dc/elements/1.1/ (Status: 302)",
+      "timestamp": "2026-04-18T11:27:54.935636"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:51.690410"
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/elements/1.1/ (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:54.935636"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=76714b75-c173-4410-8d56-6562ad5e1fd8&nonce=273140d9 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:51.937948"
+      "beacon": "Beacon fired: http://purl.org/dc/terms/ (Status: 302)",
+      "timestamp": "2026-04-18T11:27:56.511853"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
-      "timestamp": "2026-02-17T12:28:52.127076"
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/terms/ (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:56.512842"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=da9ac66c-6c0c-45e5-9e90-fef943375bd1&nonce=01f198b1 (Status: 404)",
-      "timestamp": "2026-02-17T12:28:52.315574"
+      "beacon": "Beacon fired: http://purl.org/dc/dcmitype/ (Status: 302)",
+      "timestamp": "2026-04-18T11:27:58.691515"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:52.475913"
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/dcmitype/ (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:27:58.692531"
     },
     {
-      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=22eceeaa-4773-44c3-bf33-dbc3cc131697&nonce=a0420fa6 (Status: 200)",
-      "timestamp": "2026-02-17T12:28:52.652099"
+      "beacon": "Beacon fired: http://www.w3.org/2001/XMLSchema-instance (Status: 301)",
+      "timestamp": "2026-04-18T11:28:00.493217"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://www.w3.org/2001/XMLSchema-instance (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:28:00.493217"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&amp;nonce=f5a36023 (Status: 200)",
+      "timestamp": "2026-04-18T11:28:02.845319"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&amp;nonce=f5a36023 (from HR Report.docx)",
+      "timestamp": "2026-04-18T11:28:02.846287"
+    },
+    {
+      "beacon": "Downloaded HR Report.json - Access logged in honeypot",
+      "timestamp": "2026-04-18T11:28:05.365785"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023 (Status: 200)",
+      "timestamp": "2026-04-18T11:28:05.474909"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023 (Status: 200)",
+      "timestamp": "2026-04-18T11:28:05.611630"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023 (from HR Report.json)",
+      "timestamp": "2026-04-18T11:28:05.611630"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/fonts/roboto-regular.woff2?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=c60f0549 (Status: 200)",
+      "timestamp": "2026-04-18T11:28:07.147125"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/fonts/roboto-regular.woff2?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=c60f0549 (from HR Report.json)",
+      "timestamp": "2026-04-18T11:28:07.147125"
+    },
+    {
+      "beacon": "Beacon fired: https://fyp-backend-98o5.onrender.com/assets/media/logo.png?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=b41e471a (Status: 200)",
+      "timestamp": "2026-04-18T11:28:08.419100"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/assets/media/logo.png?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=b41e471a (from HR Report.json)",
+      "timestamp": "2026-04-18T11:28:08.421101"
+    },
+    {
+      "beacon": "Downloaded HR Report.txt - Access logged in honeypot",
+      "timestamp": "2026-04-18T11:28:11.294305"
+    },
+    {
+      "beacon": "Discovered DecoyDoc via API: Financial Report (ID: 1776448587267)",
+      "timestamp": "2026-04-18T11:28:11.314186"
+    },
+    {
+      "beacon": "Downloaded Financial Report.docx - Access logged in honeypot",
+      "timestamp": "2026-04-18T11:28:12.597588"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/content-types (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/content-types (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:12.635342"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/content-types (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:12.636342"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:14.055827"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:14.057383"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships/metadata/core-properties (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:15.440484"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:15.440484"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /officeDocument/2006/relationships/extended-properties (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:16.721460"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:16.721460"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /officeDocument/2006/relationships/officeDocument (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:18.328804"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:18.329824"
+    },
+    {
+      "beacon": "Beacon failed: http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail (HTTPConnectionPool(host='schemas.openxmlformats.org', port=80): Max retries exceeded with url: /package/2006/relationships/metadata/thumbnail (Caused by NameResolutionError(\"HTTPConnection(host='schemas.openxmlformats.org', port=80): Failed to resolve 'schemas.openxmlformats.org' ([Errno 11001] getaddrinfo failed)\")))",
+      "timestamp": "2026-04-18T11:28:19.626275"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:19.626275"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/metadata/core-properties (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:20.884787"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/elements/1.1/ (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:22.454938"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/terms/ (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:23.965279"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/dcmitype/ (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:25.536960"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://www.w3.org/2001/XMLSchema-instance (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:27.096037"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&amp;nonce=cb26d605 (from Financial Report.docx)",
+      "timestamp": "2026-04-18T11:28:28.652652"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=cb26d605 (from Financial Report.json)",
+      "timestamp": "2026-04-18T11:28:31.472320"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/fonts/inter-regular.woff2?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=f2a10b55 (from Financial Report.json)",
+      "timestamp": "2026-04-18T11:28:33.157295"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/assets/media/avatar.png?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=02a63290 (from Financial Report.json)",
+      "timestamp": "2026-04-18T11:28:34.495261"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/content-types (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:39.607148"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:41.447697"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:43.321423"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:45.188725"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:46.823644"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:48.641998"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://schemas.openxmlformats.org/package/2006/metadata/core-properties (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:49.925864"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/elements/1.1/ (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:51.181040"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/terms/ (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:52.706100"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://purl.org/dc/dcmitype/ (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:54.240549"
+    },
+    {
+      "beacon": "Hidden beacon extracted: http://www.w3.org/2001/XMLSchema-instance (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:55.821962"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&amp;nonce=6e184a4d (from HR2.docx)",
+      "timestamp": "2026-04-18T11:28:57.490181"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6e184a4d (from HR2.json)",
+      "timestamp": "2026-04-18T11:29:00.630555"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/fonts/opensans-regular.woff2?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=64061f13 (from HR2.json)",
+      "timestamp": "2026-04-18T11:29:02.289743"
+    },
+    {
+      "beacon": "Hidden beacon extracted: https://fyp-backend-98o5.onrender.com/assets/media/banner.jpg?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6d91f79d (from HR2.json)",
+      "timestamp": "2026-04-18T11:29:03.964074"
+    },
+    {
+      "beacon": "Hidden beacon from metadata: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=932af41d-6744-4d11-ba20-a1e47c194bdb&nonce=f5a36023 (field: beacon, doc: HR Report)",
+      "timestamp": "2026-04-18T11:29:52.269932"
+    },
+    {
+      "beacon": "Hidden beacon from metadata: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=d8af4e9e-f9ed-4b5d-a747-d1fd0dc4ac7c&nonce=cb26d605 (field: beacon, doc: Financial Report)",
+      "timestamp": "2026-04-18T11:29:55.480779"
+    },
+    {
+      "beacon": "Hidden beacon from metadata: https://fyp-backend-98o5.onrender.com/api/beacon?resource_id=e58f3257-f16f-4ae4-8946-83c623cb86c5&nonce=6e184a4d (field: beacon, doc: HR2)",
+      "timestamp": "2026-04-18T11:29:58.657223"
     }
   ],
   "decoy_responses": [],

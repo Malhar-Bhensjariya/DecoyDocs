@@ -11,10 +11,6 @@ const DecoyDocs = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocTemplate, setNewDocTemplate] = useState('generic_report');
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
 
   const formatDate = (iso) => {
     if (!iso) return '';
@@ -22,7 +18,7 @@ const DecoyDocs = () => {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    return `${dd}?${mm}/${yyyy}`;
+    return `${dd}/${mm}/${yyyy}`;
   };
 
   useEffect(() => {
@@ -89,41 +85,7 @@ const DecoyDocs = () => {
     setCreatingDoc(false);
   };
 
-  const viewDecoyDoc = async (docId) => {
-    try {
-      const response = await axios.get(`http://localhost:3001/api/decoydocs/${docId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      setSelectedDoc(response.data);
-    } catch (error) {
-      console.error('Error fetching DecoyDoc details:', error);
-    }
-  };
 
-  const editDecoyDoc = (doc) => {
-    setSelectedDoc(doc);
-    setEditTitle(doc.title);
-    setEditContent(doc.content || '');
-    setShowEditForm(true);
-  };
-
-  const updateDecoyDoc = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.put(`http://localhost:3001/api/decoydocs/${selectedDoc.id}`, {
-        title: editTitle,
-        content: editContent
-      }, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-
-      setShowEditForm(false);
-      setSelectedDoc(null);
-      fetchDecoyDocs(); // Refresh list
-    } catch (error) {
-      console.error('Error updating DecoyDoc:', error);
-    }
-  };
 
   const deleteDecoyDoc = async (docId) => {
     if (!window.confirm('Are you sure you want to delete this honeypot document?')) {
@@ -141,7 +103,7 @@ const DecoyDocs = () => {
         });
 
         setDeletingId(null);
-        fetchDecoyDocs(); // Refresh list
+        window.location.reload(); // Force page refresh
         return;
       } catch (error) {
         attempt += 1;
@@ -163,10 +125,10 @@ const DecoyDocs = () => {
         const serverMsg = error.response?.data?.error || error.message;
 
         if (status === 404) {
-          // Already gone — refresh list and notify
-          alert('Document not found (already removed). Refreshing list.');
+          // Already gone — refresh page and notify
+          alert('Document not found (already removed). Refreshing page.');
           setDeletingId(null);
-          fetchDecoyDocs();
+          window.location.reload(); // Force page refresh
           return;
         }
 
@@ -178,15 +140,34 @@ const DecoyDocs = () => {
     }
   };
 
-  const downloadFile = (docId, type) => {
-    const url = `http://localhost:3001/api/decoydocs/${docId}/download/${type}`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadFile = async (docId, type) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/api/decoydocs/${docId}/download/${type}`,
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+          responseType: 'blob'
+        }
+      );
+
+      // Create blob link to download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Determine filename based on type
+      const filename = type === 'docx' ? `document_${docId}.docx` : `document_${docId}.json`;
+      link.setAttribute('download', filename);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file. Please try again.');
+    }
   };
 
   return (
@@ -439,23 +420,13 @@ const DecoyDocs = () => {
                       {user?.role === 'admin' && (
                         <div className="flex space-x-3 ml-4">
                           <button
-                            onClick={() => viewDecoyDoc(doc.id)}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all duration-200 text-sm font-medium flex items-center"
-                          >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          View
-                        </button>
-                          <button
-                            onClick={() => editDecoyDoc(doc)}
-                            className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-all duration-200 text-sm font-medium flex items-center"
+                            onClick={() => downloadFile(doc.id, 'docx')}
+                            className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 text-sm font-medium flex items-center"
                           >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            Edit
+                            Download
                           </button>
                           <button
                             onClick={() => deleteDecoyDoc(doc.id)}
@@ -490,112 +461,7 @@ const DecoyDocs = () => {
         </div>
       </main>
 
-      {/* View Document Modal */}
-      {selectedDoc && !showEditForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-gray-900">{selectedDoc.title}</h3>
-                <button
-                  onClick={() => setSelectedDoc(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">
-                  <strong>Created:</strong> {formatDate(selectedDoc.createdAt)}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Status:</strong> {selectedDoc.status}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Template:</strong> {selectedDoc.template}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Document Content:</h4>
-                <pre className="text-sm text-gray-700 whitespace-pre-wrap">{selectedDoc.content}</pre>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => downloadFile(selectedDoc.id, 'docx')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Download DOCX
-                </button>
-                <button
-                  onClick={() => downloadFile(selectedDoc.id, 'json')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Download JSON
-                </button>
-                <button
-                  onClick={() => setSelectedDoc(null)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit Document Modal */}
-      {showEditForm && selectedDoc && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Edit Decoy Document</h3>
-              <form onSubmit={updateDecoyDoc}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    rows={10}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="Enter document content..."
-                  />
-                </div>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowEditForm(false);
-                      setSelectedDoc(null);
-                    }}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Update Document
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

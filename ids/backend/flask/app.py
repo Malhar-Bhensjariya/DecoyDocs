@@ -3,6 +3,7 @@ from flask_cors import CORS
 import numpy as np
 import os
 import joblib
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -50,7 +51,11 @@ def predict():
         return jsonify({"error": "Not enough data"}), 400
 
     features = np.array(extract_window_features(coords)).reshape(1, -1)
-    features_scaled = scaler.transform(features)
+    
+    # Convert to DataFrame with feature names to match training
+    import pandas as pd
+    features_df = pd.DataFrame(features, columns=FEATURES)
+    features_scaled = scaler.transform(features_df)
 
     prediction = model.predict(features_scaled)[0]
     probability = model.predict_proba(features_scaled)[0][1]

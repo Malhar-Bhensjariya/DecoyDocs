@@ -25,3 +25,6 @@ REPORT.md
 GUIDE.md
 QUICK_REFERENCE.md
 STATUS_REPORT.md
+*.json
+*.docx
+*.txt
